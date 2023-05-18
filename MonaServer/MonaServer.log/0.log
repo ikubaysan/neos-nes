@@ -1,0 +1,236 @@
+18/05 12:57:52.0  INFO   3456 Application.cpp[134]          MonaServer v2.723
+18/05 12:57:52.0  INFO   3456 Application.cpp[136]          Load configuration file MonaServer.ini
+18/05 12:57:52.1  NOTE   17936 Protocols.h[82]              RTMFP server started on 0.0.0.0:1935
+18/05 12:57:52.1  NOTE   17936 Protocols.h[82]              RTMP server started on 0.0.0.0:1935
+18/05 12:57:52.1  NOTE   17936 Protocols.h[82]              RTMPS server started on 0.0.0.0:8443
+18/05 12:57:52.1  NOTE   17936 Protocols.h[82]              HTTP server started on 0.0.0.0:80
+18/05 12:57:52.1  NOTE   17936 Protocols.h[82]              WS server started on 0.0.0.0:80
+18/05 12:57:52.1  NOTE   17936 Protocols.h[82]              HTTPS server started on 0.0.0.0:443
+18/05 12:57:52.1  NOTE   17936 Protocols.h[82]              WSS server started on 0.0.0.0:443
+18/05 12:57:52.1  NOTE   17936 Protocols.h[82]              SRT server started on 0.0.0.0:9710
+18/05 13:09:33.7  INFO   17936 Server.cpp[190]              Server memory release...
+18/05 13:09:33.7  NOTE   17936 Server.cpp[195]              Server stopped
+18/05 13:09:34.7  INFO   21048 Application.cpp[134]         MonaServer v2.723
+18/05 13:09:34.7  INFO   21048 Application.cpp[136]         Load configuration file MonaServer.ini
+18/05 13:09:34.7  NOTE   15936 Protocols.h[82]              RTMFP server started on 0.0.0.0:1935
+18/05 13:09:34.7  NOTE   15936 Protocols.h[82]              RTMP server started on 0.0.0.0:1935
+18/05 13:09:34.7  NOTE   15936 Protocols.h[82]              RTMPS server started on 0.0.0.0:8443
+18/05 13:09:34.7  NOTE   15936 Protocols.h[82]              HTTP server started on 0.0.0.0:80
+18/05 13:09:34.7  NOTE   15936 Protocols.h[82]              WS server started on 0.0.0.0:80
+18/05 13:09:34.7  NOTE   15936 Protocols.h[82]              HTTPS server started on 0.0.0.0:443
+18/05 13:09:34.7  NOTE   15936 Protocols.h[82]              WSS server started on 0.0.0.0:443
+18/05 13:09:34.7  NOTE   15936 Protocols.h[82]              SRT server started on 0.0.0.0:9710
+18/05 13:10:14.1  INFO   15936 Server.cpp[190]              Server memory release...
+18/05 13:10:14.1  NOTE   15936 Server.cpp[195]              Server stopped
+18/05 13:10:15.1  INFO   13356 Application.cpp[134]         MonaServer v2.723
+18/05 13:10:15.1  INFO   13356 Application.cpp[136]         Load configuration file MonaServer.ini
+18/05 13:10:15.1  NOTE   28152 Protocols.h[82]              RTMFP server started on 0.0.0.0:1935
+18/05 13:10:15.1  NOTE   28152 Protocols.h[82]              RTMP server started on 0.0.0.0:1935
+18/05 13:10:15.1  NOTE   28152 Protocols.h[82]              RTMPS server started on 0.0.0.0:8443
+18/05 13:10:15.1  NOTE   28152 Protocols.h[82]              HTTP server started on 0.0.0.0:80
+18/05 13:10:15.1  NOTE   28152 Protocols.h[82]              WS server started on 0.0.0.0:80
+18/05 13:10:15.1  NOTE   28152 Protocols.h[82]              HTTPS server started on 0.0.0.0:443
+18/05 13:10:15.1  NOTE   28152 Protocols.h[82]              WSS server started on 0.0.0.0:443
+18/05 13:10:15.1  NOTE   28152 Protocols.h[82]              SRT server started on 0.0.0.0:9710
+18/05 13:13:00.5  INFO   28152 Server.cpp[190]              Server memory release...
+18/05 13:13:00.5  NOTE   28152 Server.cpp[195]              Server stopped
+18/05 13:13:02.0  INFO   32088 Application.cpp[134]         MonaServer v2.723
+18/05 13:13:02.0  INFO   32088 Application.cpp[136]         Load configuration file MonaServer.ini
+18/05 13:13:02.0  NOTE   28888 Protocols.h[82]              RTMFP server started on 0.0.0.0:1935
+18/05 13:13:02.0  NOTE   28888 Protocols.h[82]              RTMP server started on 0.0.0.0:1935
+18/05 13:13:02.0  NOTE   28888 Protocols.h[82]              RTMPS server started on 0.0.0.0:8443
+18/05 13:13:02.0  NOTE   28888 Protocols.h[82]              HTTP server started on 0.0.0.0:80
+18/05 13:13:02.0  NOTE   28888 Protocols.h[82]              WS server started on 0.0.0.0:80
+18/05 13:13:02.0  NOTE   28888 Protocols.h[82]              HTTPS server started on 0.0.0.0:443
+18/05 13:13:02.0  NOTE   28888 Protocols.h[82]              WSS server started on 0.0.0.0:443
+18/05 13:13:02.0  NOTE   28888 Protocols.h[82]              SRT server started on 0.0.0.0:9710
+18/05 13:14:09.6  INFO   28888 Server.cpp[190]              Server memory release...
+18/05 13:14:09.6  NOTE   28888 Server.cpp[195]              Server stopped
+18/05 13:14:10.3  INFO   32592 Application.cpp[134]         MonaServer v2.723
+18/05 13:14:10.3  INFO   32592 Application.cpp[136]         Load configuration file MonaServer.ini
+18/05 13:14:10.3  NOTE   1536 Protocols.h[82]               RTMFP server started on 0.0.0.0:1935
+18/05 13:14:10.3  NOTE   1536 Protocols.h[82]               RTMP server started on 0.0.0.0:1935
+18/05 13:14:10.3  NOTE   1536 Protocols.h[82]               RTMPS server started on 0.0.0.0:8443
+18/05 13:14:10.3  NOTE   1536 Protocols.h[82]               HTTP server started on 0.0.0.0:80
+18/05 13:14:10.3  NOTE   1536 Protocols.h[82]               WS server started on 0.0.0.0:80
+18/05 13:14:10.3  NOTE   1536 Protocols.h[82]               HTTPS server started on 0.0.0.0:443
+18/05 13:14:10.3  NOTE   1536 Protocols.h[82]               WSS server started on 0.0.0.0:443
+18/05 13:14:10.3  NOTE   1536 Protocols.h[82]               SRT server started on 0.0.0.0:9710
+18/05 13:16:03.7  INFO   1536 Server.cpp[190]               Server memory release...
+18/05 13:16:03.7  NOTE   1536 Server.cpp[195]               Server stopped
+18/05 13:16:04.5  INFO   15096 Application.cpp[134]         MonaServer v2.723
+18/05 13:16:04.5  INFO   15096 Application.cpp[136]         Load configuration file MonaServer.ini
+18/05 13:16:04.6  NOTE   29064 Protocols.h[82]              RTMFP server started on 0.0.0.0:1935
+18/05 13:16:04.6  NOTE   29064 Protocols.h[82]              RTMP server started on 0.0.0.0:1935
+18/05 13:16:04.6  NOTE   29064 Protocols.h[82]              RTMPS server started on 0.0.0.0:8443
+18/05 13:16:04.6  NOTE   29064 Protocols.h[82]              HTTP server started on 0.0.0.0:80
+18/05 13:16:04.6  NOTE   29064 Protocols.h[82]              WS server started on 0.0.0.0:80
+18/05 13:16:04.6  NOTE   29064 Protocols.h[82]              HTTPS server started on 0.0.0.0:443
+18/05 13:16:04.6  NOTE   29064 Protocols.h[82]              WSS server started on 0.0.0.0:443
+18/05 13:16:04.6  NOTE   29064 Protocols.h[82]              SRT server started on 0.0.0.0:9710
+18/05 13:18:00.4  INFO   29064 Server.cpp[190]              Server memory release...
+18/05 13:18:00.4  NOTE   29064 Server.cpp[195]              Server stopped
+18/05 13:21:10.0  INFO   19556 Application.cpp[134]         MonaServer v2.723
+18/05 13:21:10.0  INFO   19556 Application.cpp[136]         Load configuration file MonaServer.ini
+18/05 13:21:10.0  NOTE   31856 Protocols.h[82]              RTMFP server started on 0.0.0.0:1935
+18/05 13:21:10.0  NOTE   31856 Protocols.h[82]              RTMP server started on 0.0.0.0:1935
+18/05 13:21:10.0  NOTE   31856 Protocols.h[82]              RTMPS server started on 0.0.0.0:8443
+18/05 13:21:10.0  NOTE   31856 Protocols.h[82]              HTTP server started on 0.0.0.0:80
+18/05 13:21:10.0  NOTE   31856 Protocols.h[82]              WS server started on 0.0.0.0:80
+18/05 13:21:10.0  NOTE   31856 Protocols.h[82]              HTTPS server started on 0.0.0.0:443
+18/05 13:21:10.0  NOTE   31856 Protocols.h[82]              WSS server started on 0.0.0.0:443
+18/05 13:21:10.0  NOTE   31856 Protocols.h[82]              SRT server started on 0.0.0.0:9710
+18/05 13:21:15.9  ERROR  31856 FlashMainStream.cpp[150]     Method client releaseStream not found in application /
+18/05 13:21:15.9  ERROR  31856 FlashMainStream.cpp[150]     Method client FCPublish not found in application /
+18/05 13:21:15.9  INFO   31856 Publication.cpp[128]         Publication test {append: false, duration: 0, segments: 0, server: mona} started
+18/05 13:21:15.9  INFO   31856 Publication.cpp[424]         Write test publication properties {2.1: false, 3.1: false, 4.0: false, 4.1: false, 5.1: false, 7.1: false, append: false, audiochannels: 2, audiocodecid: 10, audiodatarate: 160, audiosamplerate: 48000, audiosamplesize: 16, duration: 0, encoder: obs-output module (libobs version 27.2.1), fileSize: 0, framerate: 30, height: 720, segments: 0, server: mona, stereo: true, videocodecid: 7, videodatarate: 2500, width: 1280}
+18/05 13:21:16.1  INFO   31856 Server.cpp[119]              1 clients
+18/05 13:22:06.2  ERROR  31856 MonaServer.cpp[154]          Application /test doesn't exist
+18/05 13:22:06.2  WARN   31856 TCPSession.cpp[32]           RTMP 2-127.0.0.1:57590, Connection aborted
+18/05 13:22:30.5  ERROR  31856 MonaServer.cpp[154]          Application /test doesn't exist
+18/05 13:22:30.5  WARN   31856 TCPSession.cpp[32]           RTMP 2-127.0.0.1:57601, Connection aborted
+18/05 13:22:43.5  ERROR  31856 FlashMainStream.cpp[150]     Method client getStreamLength not found in application /
+18/05 13:22:43.5  INFO   31856 FlashStream.cpp[126]         setBufferTime 3000ms on stream id=1
+18/05 13:22:44.1  INFO   31856 Server.cpp[119]              2 clients
+18/05 13:22:45.4  ERROR  31856 FlashMainStream.cpp[150]     Method client FCUnpublish not found in application /
+18/05 13:22:45.4  INFO   31856 Publication.cpp[205]         Publication test stopped
+18/05 13:22:46.1  INFO   31856 Server.cpp[119]              1 clients
+18/05 13:22:53.5  ERROR  31856 FlashMainStream.cpp[150]     Method client releaseStream not found in application /
+18/05 13:22:53.5  ERROR  31856 FlashMainStream.cpp[150]     Method client FCPublish not found in application /
+18/05 13:22:53.5  INFO   31856 Publication.cpp[128]         Publication  {append: false, duration: 0, segments: 0, server: mona} started
+18/05 13:22:53.5  INFO   31856 Publication.cpp[424]         Write  publication properties {2.1: false, 3.1: false, 4.0: false, 4.1: false, 5.1: false, 7.1: false, append: false, audiochannels: 2, audiocodecid: 10, audiodatarate: 160, audiosamplerate: 48000, audiosamplesize: 16, duration: 0, encoder: obs-output module (libobs version 27.2.1), fileSize: 0, framerate: 30, height: 720, segments: 0, server: mona, stereo: true, videocodecid: 7, videodatarate: 2500, width: 1280}
+18/05 13:22:54.1  INFO   31856 Server.cpp[119]              2 clients
+18/05 13:23:58.4  ERROR  31856 FlashMainStream.cpp[150]     Method client FCUnpublish not found in application /
+18/05 13:23:58.4  INFO   31856 Publication.cpp[205]         Publication  stopped
+18/05 13:24:00.1  INFO   31856 Server.cpp[119]              1 clients
+18/05 13:24:02.1  INFO   31856 Server.cpp[119]              0 clients
+18/05 13:32:35.3  ERROR  31856 FlashMainStream.cpp[150]     Method client releaseStream not found in application live/
+18/05 13:32:35.3  ERROR  31856 FlashMainStream.cpp[150]     Method client FCPublish not found in application live/
+18/05 13:32:35.3  INFO   31856 Publication.cpp[128]         Publication nes_stream {append: false, duration: 0, segments: 0, server: mona} started
+18/05 13:32:35.4  INFO   31856 Publication.cpp[424]         Write nes_stream publication properties {append: false, duration: 0, encoder: Lavf58.38.101, filesize: 0, framerate: 30, height: 240, segments: 0, server: mona, videocodecid: 7, videodatarate: 0, width: 256}
+18/05 13:32:35.4  ERROR  31856 FlashMainStream.cpp[150]     Method client FCUnpublish not found in application live/
+18/05 13:32:35.4  INFO   31856 Publication.cpp[205]         Publication nes_stream stopped
+18/05 13:33:22.9  ERROR  31856 FlashMainStream.cpp[150]     Method client getStreamLength not found in application live/
+18/05 13:33:22.9  INFO   31856 FlashStream.cpp[126]         setBufferTime 3000ms on stream nes_stream
+18/05 13:33:24.2  INFO   31856 Server.cpp[119]              1 clients
+18/05 13:35:30.2  INFO   31856 Service.cpp[216]             Application www../新しいフォルダー stopped
+18/05 13:35:36.3  INFO   31856 Service.cpp[216]             Application www../新しいフォルダー stopped
+18/05 13:35:44.5  ERROR  31856 FlashMainStream.cpp[150]     Method client releaseStream not found in application live/
+18/05 13:35:44.5  ERROR  31856 FlashMainStream.cpp[150]     Method client FCPublish not found in application live/
+18/05 13:35:44.5  INFO   31856 Publication.cpp[128]         Publication nes_stream {append: false, duration: 0, segments: 0, server: mona} started
+18/05 13:35:44.5  INFO   31856 Publication.cpp[424]         Write nes_stream publication properties {append: false, duration: 0, encoder: Lavf58.38.101, filesize: 0, framerate: 30, height: 240, segments: 0, server: mona, videocodecid: 7, videodatarate: 0, width: 256}
+18/05 13:35:44.5  ERROR  31856 FlashMainStream.cpp[150]     Method client FCUnpublish not found in application live/
+18/05 13:35:44.5  INFO   31856 Publication.cpp[205]         Publication nes_stream stopped
+18/05 13:35:44.7  INFO   31856 Server.cpp[119]              0 clients
+18/05 13:38:33.6  ERROR  31856 FlashMainStream.cpp[150]     Method client releaseStream not found in application live/
+18/05 13:38:33.6  ERROR  31856 FlashMainStream.cpp[150]     Method client FCPublish not found in application live/
+18/05 13:38:33.6  INFO   31856 Publication.cpp[128]         Publication nes_stream {append: false, duration: 0, segments: 0, server: mona} started
+18/05 13:38:33.7  ERROR  31856 FlashMainStream.cpp[150]     Method client FCUnpublish not found in application live/
+18/05 13:38:33.7  INFO   31856 Publication.cpp[205]         Publication nes_stream stopped
+18/05 13:39:22.5  ERROR  31856 FlashMainStream.cpp[150]     Method client releaseStream not found in application live/
+18/05 13:39:22.5  ERROR  31856 FlashMainStream.cpp[150]     Method client FCPublish not found in application live/
+18/05 13:39:22.5  FATAL  31856 Server.cpp[133]              Server, A LUAPublication 000002AC1306D490 was not released properly, c:\travail\monaworkspace\monaserver2\monaserver\sources\Script.h[402]
+18/05 13:39:22.5  INFO   31856 Service.cpp[216]             Application www../live stopped
+18/05 13:39:22.5  WARN   31856 Sessions.cpp[30]             sessions are deleting
+18/05 13:45:00.6  INFO   20980 Application.cpp[134]         MonaServer v2.723
+18/05 13:45:00.6  INFO   20980 Application.cpp[136]         Load configuration file MonaServer.ini
+18/05 13:45:00.6  NOTE   3084 Protocols.h[82]               RTMFP server started on 0.0.0.0:1935
+18/05 13:45:00.6  NOTE   3084 Protocols.h[82]               RTMP server started on 0.0.0.0:1935
+18/05 13:45:00.6  NOTE   3084 Protocols.h[82]               RTMPS server started on 0.0.0.0:8443
+18/05 13:45:00.6  NOTE   3084 Protocols.h[82]               HTTP server started on 0.0.0.0:80
+18/05 13:45:00.6  NOTE   3084 Protocols.h[82]               WS server started on 0.0.0.0:80
+18/05 13:45:00.6  NOTE   3084 Protocols.h[82]               HTTPS server started on 0.0.0.0:443
+18/05 13:45:00.6  NOTE   3084 Protocols.h[82]               WSS server started on 0.0.0.0:443
+18/05 13:45:00.6  NOTE   3084 Protocols.h[82]               SRT server started on 0.0.0.0:9710
+18/05 13:45:05.6  ERROR  3084 FlashMainStream.cpp[150]      Method client releaseStream not found in application live/
+18/05 13:45:05.6  ERROR  3084 FlashMainStream.cpp[150]      Method client FCPublish not found in application live/
+18/05 13:45:05.6  INFO   3084 Publication.cpp[128]          Publication nes_stream {append: false, duration: 0, segments: 0, server: mona} started
+18/05 13:45:05.7  INFO   3084 Publication.cpp[424]          Write nes_stream publication properties {append: false, duration: 0, encoder: Lavf58.38.101, filesize: 0, framerate: 30, height: 240, segments: 0, server: mona, videocodecid: 7, videodatarate: 0, width: 256}
+18/05 13:45:06.6  INFO   3084 Server.cpp[119]               1 clients
+18/05 13:45:18.1  ERROR  3084 FlashMainStream.cpp[150]      Method client getStreamLength not found in application live/
+18/05 13:45:18.1  INFO   3084 FlashStream.cpp[126]          setBufferTime 3000ms on stream nes_stream
+18/05 13:45:18.6  INFO   3084 Server.cpp[119]               2 clients
+18/05 13:45:27.4  WARN   3084 Subscription.cpp[523]         RTMPWriter video timeout, insufficient bandwidth to play nes_stream
+18/05 13:46:02.5  ERROR  3084 FlashMainStream.cpp[150]      Method client FCUnpublish not found in application live/
+18/05 13:46:02.5  INFO   3084 Publication.cpp[205]          Publication nes_stream stopped
+18/05 13:46:02.7  INFO   3084 Server.cpp[119]               1 clients
+18/05 13:47:02.0  WARN   3084 TCPSession.cpp[32]            RTMP 2-127.0.0.1:58532, Connection aborted
+18/05 13:47:02.9  INFO   3084 Server.cpp[119]               0 clients
+18/05 13:47:07.1  ERROR  3084 FlashMainStream.cpp[150]      Method client getStreamLength not found in application live/
+18/05 13:47:07.1  INFO   3084 FlashStream.cpp[126]          setBufferTime 3000ms on stream nes_stream
+18/05 13:47:08.9  INFO   3084 Server.cpp[119]               1 clients
+18/05 13:47:11.9  ERROR  3084 FlashMainStream.cpp[150]      Method client releaseStream not found in application live/
+18/05 13:47:11.9  ERROR  3084 FlashMainStream.cpp[150]      Method client FCPublish not found in application live/
+18/05 13:47:11.9  INFO   3084 Publication.cpp[128]          Publication nes_stream {append: false, duration: 0, segments: 0, server: mona} started
+18/05 13:47:11.9  INFO   3084 Publication.cpp[424]          Write nes_stream publication properties {append: false, duration: 0, encoder: Lavf58.38.101, filesize: 0, framerate: 30, height: 240, segments: 0, server: mona, videocodecid: 7, videodatarate: 0, width: 256}
+18/05 13:47:13.0  INFO   3084 Server.cpp[119]               2 clients
+18/05 13:47:17.9  WARN   3084 Subscription.cpp[523]         RTMPWriter video timeout, insufficient bandwidth to play nes_stream
+18/05 13:49:18.8  WARN   3084 TCPSession.cpp[32]            RTMP 1-127.0.0.1:58589, Connection reseted (from=0.0.0.0:0, size=42, flags=0)
+18/05 13:49:18.8  WARN   3084 TCPSession.cpp[32]            RTMP 1-127.0.0.1:58589, Connection aborted
+18/05 13:49:19.0  INFO   3084 Server.cpp[119]               1 clients
+18/05 13:55:20.8  WARN   3084 TCPSession.cpp[32]            RTMP 2-127.0.0.1:58597, Connection aborted
+18/05 13:55:20.8  INFO   3084 Publication.cpp[205]          Publication nes_stream stopped
+18/05 13:55:21.0  INFO   3084 Server.cpp[119]               0 clients
+18/05 13:55:23.8  ERROR  3084 FlashMainStream.cpp[150]      Method client releaseStream not found in application live/
+18/05 13:55:23.8  ERROR  3084 FlashMainStream.cpp[150]      Method client FCPublish not found in application live/
+18/05 13:55:23.8  INFO   3084 Publication.cpp[128]          Publication nes_stream {append: false, duration: 0, segments: 0, server: mona} started
+18/05 13:55:23.9  INFO   3084 Publication.cpp[424]          Write nes_stream publication properties {append: false, duration: 0, encoder: Lavf58.38.101, filesize: 0, framerate: 30, height: 240, segments: 0, server: mona, videocodecid: 7, videodatarate: 0, width: 256}
+18/05 13:55:25.0  INFO   3084 Server.cpp[119]               1 clients
+18/05 16:26:14.3  ERROR  3084 FlashMainStream.cpp[150]      Method client releaseStream not found in application live/
+18/05 16:26:14.3  ERROR  3084 FlashMainStream.cpp[150]      Method client FCPublish not found in application live/
+18/05 16:26:14.3  ERROR  3084 ServerAPI.cpp[55]             nes_stream is already publishing
+18/05 16:26:26.8  ERROR  3084 FlashMainStream.cpp[150]      Method client FCUnpublish not found in application live/
+18/05 16:26:26.8  INFO   3084 Publication.cpp[205]          Publication nes_stream stopped
+18/05 16:26:28.5  INFO   3084 Server.cpp[119]               0 clients
+18/05 16:26:29.9  ERROR  3084 FlashMainStream.cpp[150]      Method client releaseStream not found in application live/
+18/05 16:26:29.9  ERROR  3084 FlashMainStream.cpp[150]      Method client FCPublish not found in application live/
+18/05 16:26:30.0  FATAL  3084 Server.cpp[133]               Server, A LUAPublication 000001D8F66575A0 was not released properly, c:\travail\monaworkspace\monaserver2\monaserver\sources\Script.h[402]
+18/05 16:26:30.0  WARN   3084 Sessions.cpp[30]              sessions are deleting
+18/05 16:27:09.9  INFO   10912 Application.cpp[134]         MonaServer v2.723
+18/05 16:27:09.9  INFO   10912 Application.cpp[136]         Load configuration file MonaServer.ini
+18/05 16:27:09.9  NOTE   34220 Protocols.h[82]              RTMFP server started on 0.0.0.0:1935
+18/05 16:27:09.9  NOTE   34220 Protocols.h[82]              RTMP server started on 0.0.0.0:1935
+18/05 16:27:09.9  NOTE   34220 Protocols.h[82]              RTMPS server started on 0.0.0.0:8443
+18/05 16:27:09.9  NOTE   34220 Protocols.h[82]              HTTP server started on 0.0.0.0:80
+18/05 16:27:09.9  NOTE   34220 Protocols.h[82]              WS server started on 0.0.0.0:80
+18/05 16:27:09.9  NOTE   34220 Protocols.h[82]              HTTPS server started on 0.0.0.0:443
+18/05 16:27:09.9  NOTE   34220 Protocols.h[82]              WSS server started on 0.0.0.0:443
+18/05 16:27:09.9  NOTE   34220 Protocols.h[82]              SRT server started on 0.0.0.0:9710
+18/05 16:27:19.3  ERROR  34220 FlashMainStream.cpp[150]     Method client releaseStream not found in application live/
+18/05 16:27:19.3  ERROR  34220 FlashMainStream.cpp[150]     Method client FCPublish not found in application live/
+18/05 16:27:19.3  INFO   34220 Publication.cpp[128]         Publication nes_stream {append: false, duration: 0, segments: 0, server: mona} started
+18/05 16:27:19.4  INFO   34220 Publication.cpp[424]         Write nes_stream publication properties {append: false, duration: 0, encoder: Lavf58.38.101, filesize: 0, framerate: 30, height: 240, segments: 0, server: mona, videocodecid: 7, videodatarate: 0, width: 256}
+18/05 16:27:19.9  INFO   34220 Server.cpp[119]              1 clients
+18/05 16:27:34.7  ERROR  34220 FlashMainStream.cpp[150]     Method client getStreamLength not found in application live/
+18/05 16:27:34.7  INFO   34220 FlashStream.cpp[126]         setBufferTime 3000ms on stream nes_stream
+18/05 16:27:35.9  INFO   34220 Server.cpp[119]              2 clients
+18/05 16:27:46.2  WARN   34220 Subscription.cpp[523]        RTMPWriter video timeout, insufficient bandwidth to play nes_stream
+18/05 16:29:33.7  ERROR  34220 FlashMainStream.cpp[150]     Method client FCUnpublish not found in application live/
+18/05 16:29:33.7  WARN   34220 TCPSession.cpp[32]           RTMP 1-127.0.0.1:50489, Connection reseted (from=0.0.0.0:0, size=2048, flags=0)
+18/05 16:29:33.7  WARN   34220 TCPSession.cpp[32]           RTMP 1-127.0.0.1:50489, Connection reseted (from=0.0.0.0:0, size=2048, flags=0)
+18/05 16:29:33.7  WARN   34220 TCPSession.cpp[32]           RTMP 1-127.0.0.1:50489, Connection aborted
+18/05 16:29:33.7  INFO   34220 Publication.cpp[205]         Publication nes_stream stopped
+18/05 16:29:34.0  INFO   34220 Server.cpp[119]              1 clients
+18/05 16:29:36.4  ERROR  34220 FlashMainStream.cpp[150]     Method client releaseStream not found in application live/
+18/05 16:29:36.4  ERROR  34220 FlashMainStream.cpp[150]     Method client FCPublish not found in application live/
+18/05 16:29:36.4  INFO   34220 Publication.cpp[128]         Publication nes_stream {append: false, duration: 0, segments: 0, server: mona} started
+18/05 16:29:36.4  INFO   34220 Publication.cpp[424]         Write nes_stream publication properties {append: false, duration: 0, encoder: Lavf58.38.101, filesize: 0, framerate: 30, height: 240, segments: 0, server: mona, videocodecid: 7, videodatarate: 0, width: 256}
+18/05 16:29:38.0  INFO   34220 Server.cpp[119]              2 clients
+18/05 16:30:02.9  WARN   34220 TCPSession.cpp[32]           RTMP 2-127.0.0.1:50497, Connection reseted (from=0.0.0.0:0, size=2048, flags=0)
+18/05 16:30:02.9  WARN   34220 TCPSession.cpp[32]           RTMP 2-127.0.0.1:50497, Connection aborted
+18/05 16:30:03.4  ERROR  34220 FlashMainStream.cpp[150]     Method client FCUnpublish not found in application live/
+18/05 16:30:03.4  INFO   34220 Publication.cpp[205]         Publication nes_stream stopped
+18/05 16:30:04.0  INFO   34220 Server.cpp[119]              0 clients
+18/05 16:30:08.2  ERROR  34220 FlashMainStream.cpp[150]     Method client releaseStream not found in application live/
+18/05 16:30:08.2  ERROR  34220 FlashMainStream.cpp[150]     Method client FCPublish not found in application live/
+18/05 16:30:08.2  INFO   34220 Publication.cpp[128]         Publication nes_stream {append: false, duration: 0, segments: 0, server: mona} started
+18/05 16:30:08.2  INFO   34220 Publication.cpp[424]         Write nes_stream publication properties {append: false, duration: 0, encoder: Lavf58.38.101, filesize: 0, framerate: 30, height: 240, segments: 0, server: mona, videocodecid: 7, videodatarate: 0, width: 256}
+18/05 16:30:10.0  INFO   34220 Server.cpp[119]              1 clients
+18/05 16:30:36.5  ERROR  34220 FlashMainStream.cpp[150]     Method client FCUnpublish not found in application live/
+18/05 16:30:36.5  INFO   34220 Publication.cpp[205]         Publication nes_stream stopped
+18/05 16:30:38.0  INFO   34220 Server.cpp[119]              0 clients
+18/05 16:30:39.0  ERROR  34220 FlashMainStream.cpp[150]     Method client releaseStream not found in application live/
+18/05 16:30:39.0  ERROR  34220 FlashMainStream.cpp[150]     Method client FCPublish not found in application live/
+18/05 16:30:39.0  INFO   34220 Publication.cpp[128]         Publication nes_stream {append: false, duration: 0, segments: 0, server: mona} started
+18/05 16:30:39.0  INFO   34220 Publication.cpp[424]         Write nes_stream publication properties {append: false, duration: 0, encoder: Lavf58.38.101, filesize: 0, framerate: 30, height: 240, segments: 0, server: mona, videocodecid: 7, videodatarate: 0, width: 256}
+18/05 16:30:40.0  INFO   34220 Server.cpp[119]              1 clients
