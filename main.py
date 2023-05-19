@@ -3,6 +3,7 @@ import concurrent.futures
 import asyncio
 import logging
 import websockets
+import time
 from nes_py.wrappers import JoypadSpace
 from nes_py import NESEnv
 
@@ -17,14 +18,14 @@ emulator = NESEnv(r"C:\Users\Tay\Desktop\Stuff\Games\emulators\fceux\roms\FCCont
 
 # Define button map
 BUTTON_MAP = {
-    'up': 1 << 4,
-    'down': 1 << 5,
-    'left': 1 << 6,
-    'right': 1 << 7,
-    'a': 1 << 0,
-    'b': 1 << 1,
-    'start': 1 << 3,
-    'select': 1 << 2,
+    'a': 1,
+    'b': 2,
+    'select': 4,
+    'start': 8,
+    'up': 16,
+    'down': 32,
+    'left': 64,
+    'right': 128,
 }
 
 # Create a shared state for the action
@@ -38,11 +39,14 @@ command = [
     '-vcodec', 'rawvideo',
     '-s', '256x240',
     '-pix_fmt', 'rgb24',
-    '-r', '30',
+    '-r', '10',
     '-i', '-',
     '-c:v', 'libx264',
-    '-pix_fmt', 'yuv420p',
+    '-profile:v', 'baseline',
     '-preset', 'ultrafast',
+    '-tune', 'fastdecode',
+    '-crf', '35',
+    '-pix_fmt', 'yuv420p',
     '-f', 'flv',
     'rtmp://localhost/live/nes_stream',
 ]
@@ -84,19 +88,23 @@ async def start_emulation():
     with concurrent.futures.ThreadPoolExecutor() as executor:
         while not done:
             global current_action
+            start_time = time.time()
             logger.info(f"Current action: {current_action}")
-            # Emulate frame and get RGB data
-            state, _, done, _ = emulator.step(current_action)
+            state, _, done, _ = emulator.step(action=current_action)
             state = state.astype('uint8')
 
             # Write frame to FFmpeg's stdin
             loop = asyncio.get_running_loop()
             await loop.run_in_executor(executor, proc.stdin.write, state.tobytes())
-            # Break the loop if needed
-            if done:
-                state = emulator.reset()
-                done = False
 
+            # Calculate the time taken for the current iteration
+            elapsed_time = time.time() - start_time
+
+            # Calculate the delay required for 60 FPS (approximately 0.0167 seconds)
+            delay = max(0.0, (1/60) - elapsed_time)
+
+            # Delay for the remaining time until the next frame
+            await asyncio.sleep(delay)
     proc.stdin.close()
 
 # Start the event loop
