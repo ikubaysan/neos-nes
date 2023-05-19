@@ -3,6 +3,7 @@ import logging
 import websockets
 import keyboard
 import threading
+import time
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -49,11 +50,16 @@ def send_key_presses():
 # Start the event loop
 async def main():
     global websocket
-    async with websockets.connect(f"ws://{HOST}:{PORT}") as ws:
-        websocket = ws
-        logger.info(f"Connected to WebSocket at ws://{HOST}:{PORT}")
-        while True:  # Keep the connection open
-            await asyncio.sleep(1)  # Sleep for a bit to reduce CPU usage
+    while True:
+        try:
+            async with websockets.connect(f"ws://{HOST}:{PORT}") as ws:
+                websocket = ws
+                logger.info(f"Connected to WebSocket at ws://{HOST}:{PORT}")
+                while True:  # Keep the connection open
+                    await asyncio.sleep(1)  # Sleep for a bit to reduce CPU usage
+        except Exception as e:
+            logger.info(f"A critical error occured. Retrying in 3 seconds...")
+            time.sleep(3)  # wait for 5 seconds before trying to reconnect
 
 # Run the keyboard listener in a separate thread
 threading.Thread(target=send_key_presses, daemon=True).start()

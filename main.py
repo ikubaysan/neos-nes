@@ -11,10 +11,14 @@ from nes_py import NESEnv
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Define whether to stream or not
+streaming = True
+render_emulator = True
+
 # Initialize NES emulator and load ROM
 #emulator = NESEnv('./roms/flappy.nes')
-#emulator = NESEnv(r"C:\Users\Tay\Desktop\Stuff\Games\emulators\fceux\roms\Super Mario Bros.nes")
-emulator = NESEnv(r"C:\Users\Tay\Desktop\Stuff\Games\emulators\fceux\roms\FCControllerTest.nes")
+emulator = NESEnv(r"C:\Users\Tay\Desktop\Stuff\Games\emulators\fceux\roms\Super Mario Bros.nes")
+#emulator = NESEnv(r"C:\Users\Tay\Desktop\Stuff\Games\emulators\fceux\roms\FCControllerTest.nes")
 
 # Define button map
 BUTTON_MAP = {
@@ -52,11 +56,17 @@ command = [
 ]
 
 # Create subprocess for FFmpeg
-proc = subprocess.Popen(command, stdin=subprocess.PIPE)
+proc = None
+if streaming:
+    proc = subprocess.Popen(command, stdin=subprocess.PIPE)
 
 # WebSocket server configuration
 HOST = 'localhost'
 PORT = 9000
+
+execution_count = 0
+render_count = 0
+last_reset_time = time.time()
 
 # WebSocket connection handler
 async def handle_connection(websocket, path):
@@ -80,6 +90,7 @@ async def start_websocket_server():
 
 # Start the emulation
 async def start_emulation():
+    global execution_count, render_count, last_reset_time
     # Reset the emulator
     state = emulator.reset()
 
@@ -89,13 +100,28 @@ async def start_emulation():
         while not done:
             global current_action
             start_time = time.time()
-            logger.info(f"Current action: {current_action}")
             state, _, done, _ = emulator.step(action=current_action)
             state = state.astype('uint8')
 
-            # Write frame to FFmpeg's stdin
-            loop = asyncio.get_running_loop()
-            await loop.run_in_executor(executor, proc.stdin.write, state.tobytes())
+            if render_emulator:
+                # Render the emulator state in a window
+                emulator.render()
+                render_count += 1
+
+            # Write frame to FFmpeg's stdin only if streaming is enabled
+            if streaming:
+                loop = asyncio.get_running_loop()
+                await loop.run_in_executor(executor, proc.stdin.write, state.tobytes())
+
+                # Increment execution count
+                execution_count += 1
+
+                # If a second has passed since the last reset, log and reset the execution count
+                if time.time() - last_reset_time >= 1.0:
+                    logger.info(f"stdin writes per second: {execution_count}")
+                    logger.info(f"renders per second: {render_count}")
+                    execution_count = render_count = 0
+                    last_reset_time = time.time()
 
             # Calculate the time taken for the current iteration
             elapsed_time = time.time() - start_time
@@ -105,7 +131,10 @@ async def start_emulation():
 
             # Delay for the remaining time until the next frame
             await asyncio.sleep(delay)
-    proc.stdin.close()
+
+    # Close the subprocess only if streaming is enabled
+    if streaming:
+        proc.stdin.close()
 
 # Start the event loop
 async def main():
@@ -115,5 +144,6 @@ async def main():
 try:
     asyncio.run(main())
 finally:
-    # Wait for FFmpeg to finish
-    proc.communicate()
+    # Wait for FFmpeg to finish only if streaming is enabled
+    if streaming:
+        proc.communicate()
