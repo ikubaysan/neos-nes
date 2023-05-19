@@ -41,15 +41,15 @@ command = [
     '-y',
     '-f', 'rawvideo',
     '-vcodec', 'rawvideo',
-    '-s', '256x240',
+    '-s', '256x240',  # lower this if you can
     '-pix_fmt', 'rgb24',
-    '-r', '10',
+    '-r', '10',  # lower this if you can
     '-i', '-',
     '-c:v', 'libx264',
     '-profile:v', 'baseline',
-    '-preset', 'ultrafast',
-    '-tune', 'fastdecode',
-    '-crf', '35',
+    '-preset', 'ultrafast',  # changed from ultrafast
+    '-tune', 'zerolatency',  # changed from fastdecode
+    '-crf', '45',  # raised from 35
     '-pix_fmt', 'yuv420p',
     '-f', 'flv',
     'rtmp://localhost/live/nes_stream',
@@ -97,11 +97,13 @@ async def start_emulation():
     # Emulation loop and livestreaming
     done = False
     with concurrent.futures.ThreadPoolExecutor() as executor:
+        framecount = 0
         while not done:
             global current_action
             start_time = time.time()
             state, _, done, _ = emulator.step(action=current_action)
             state = state.astype('uint8')
+            framecount += 1
 
             if render_emulator:
                 # Render the emulator state in a window
@@ -109,7 +111,7 @@ async def start_emulation():
                 render_count += 1
 
             # Write frame to FFmpeg's stdin only if streaming is enabled
-            if streaming:
+            if streaming and framecount:
                 loop = asyncio.get_running_loop()
                 await loop.run_in_executor(executor, proc.stdin.write, state.tobytes())
 
