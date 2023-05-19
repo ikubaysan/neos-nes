@@ -16,7 +16,12 @@ async def receive_frames():
             async with websockets.connect(uri) as websocket:
                 while True:
                     png_data = await websocket.recv()
-                    frame = imageio.imread(png_data)
+                    try:
+                        frame = imageio.imread(png_data)
+                        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB
+                    except:
+                        #print(f"Could not read data as frame: {png_data}")
+                        continue
                     cv2.imshow('NES Emulator Frame Viewer', frame)
                     if cv2.waitKey(1) & 0xFF == ord('q'):
                         break

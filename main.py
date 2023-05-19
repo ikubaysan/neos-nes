@@ -106,6 +106,7 @@ async def start_emulation():
             try:
                 png_data = imageio.imwrite(imageio.RETURN_BYTES, state, format='png')
                 await websocket.send(png_data)
+                #await websocket.send(f"A frame at {str(time.time())}")
             except websockets.exceptions.ConnectionClosedOK:
                 logger.info("Client disconnected")
                 failed_sockets.add(websocket)
@@ -125,7 +126,7 @@ async def start_emulation():
             last_reset_time = time.time()
 
         # Constant delay for each frame
-        await asyncio.sleep(1.0 / 60.0)  # Change this value to set the desired frame rate
+        await asyncio.sleep(1.0 / 30.0)
 
 
 # Start the event loop
