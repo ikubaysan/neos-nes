@@ -83,7 +83,6 @@ async def start_frame_websocket_server():
     logger.info(f"Frame WebSocket server started at ws://{HOST}:{FRAME_PORT}")
     await server.wait_closed()
 
-# Start the emulation
 async def start_emulation():
     global execution_count, last_reset_time
     # Reset the emulator

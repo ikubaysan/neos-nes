@@ -9,6 +9,10 @@ import time
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# HOST = 'localhost'
+HOST = '10.0.0.147'
+PORT = 9000
+
 class ControllerClient:
     # Define button map
     BUTTON_MAP = {
@@ -59,7 +63,7 @@ class ControllerClient:
 
 if __name__ == "__main__":
     # Initialize the controller client
-    controller_client = ControllerClient('10.0.0.147', 9000)
+    controller_client = ControllerClient(HOST, PORT)
 
     # Run the keyboard listener in a separate thread
     threading.Thread(target=controller_client.send_key_presses, daemon=True).start()
