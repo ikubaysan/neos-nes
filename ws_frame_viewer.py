@@ -5,7 +5,8 @@ import cv2
 import numpy as np
 import imageio
 
-HOST = 'localhost'
+#HOST = 'localhost'
+HOST = '10.0.0.147'
 PORT = 9001
 
 async def receive_frames():

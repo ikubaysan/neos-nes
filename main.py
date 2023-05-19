@@ -33,12 +33,13 @@ BUTTON_MAP = {
 current_action = 0
 
 # WebSocket server configuration
-HOST = 'localhost'
+#HOST = 'localhost'
+HOST = '10.0.0.147'
 CONTROLLER_PORT = 9000
 FRAME_PORT = 9001
 
-# WebSocket for frame
-frame_websocket = None
+# WebSockets for frame
+frame_websockets = set()
 
 execution_count = 0
 last_reset_time = time.time()
@@ -58,8 +59,7 @@ async def handle_controller_connection(websocket, path):
 
 # WebSocket connection handler for frame
 async def handle_frame_connection(websocket, path):
-    global frame_websocket
-    frame_websocket = websocket
+    frame_websockets.add(websocket)
     logger.info("Frame WebSocket connection established")
     try:
         while True:
@@ -69,7 +69,7 @@ async def handle_frame_connection(websocket, path):
     except websockets.exceptions.ConnectionClosed:
         logger.info("Frame WebSocket connection closed")
     finally:
-        frame_websocket = None
+        frame_websockets.remove(websocket)
 
 # Start the WebSocket server for controller
 async def start_controller_websocket_server():
@@ -85,7 +85,7 @@ async def start_frame_websocket_server():
 
 # Start the emulation
 async def start_emulation():
-    global execution_count, last_reset_time, frame_websocket
+    global execution_count, last_reset_time
     # Reset the emulator
     state = emulator.reset()
 
@@ -101,17 +101,20 @@ async def start_emulation():
         emulator.render()
 
         # Convert state to PNG and send over websocket
-        if frame_websocket:
+        failed_sockets = set()
+        for websocket in frame_websockets:
             try:
                 png_data = imageio.imwrite(imageio.RETURN_BYTES, state, format='png')
-                await frame_websocket.send(png_data)
+                await websocket.send(png_data)
             except websockets.exceptions.ConnectionClosedOK:
                 logger.info("Client disconnected")
-                frame_websocket = None
+                failed_sockets.add(websocket)
             except Exception as e:
                 logger.error(f"Error: {e}")
-                frame_websocket = None
+                failed_sockets.add(websocket)
 
+        # Remove failed sockets from active set
+        frame_websockets.difference_update(failed_sockets)
         # Increment execution count
         execution_count += 1
 
