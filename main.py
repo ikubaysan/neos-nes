@@ -4,6 +4,9 @@ import asyncio
 import logging
 import websockets
 import time
+import imageio
+import cv2
+import numpy as np
 from nes_py.wrappers import JoypadSpace
 from nes_py import NESEnv
 
@@ -11,14 +14,8 @@ from nes_py import NESEnv
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Define whether to stream or not
-streaming = True
-render_emulator = True
-
 # Initialize NES emulator and load ROM
-#emulator = NESEnv('./roms/flappy.nes')
 emulator = NESEnv(r"C:\Users\Tay\Desktop\Stuff\Games\emulators\fceux\roms\Super Mario Bros.nes")
-#emulator = NESEnv(r"C:\Users\Tay\Desktop\Stuff\Games\emulators\fceux\roms\FCControllerTest.nes")
 
 # Define button map
 BUTTON_MAP = {
@@ -35,41 +32,19 @@ BUTTON_MAP = {
 # Create a shared state for the action
 current_action = 0
 
-# Set up command to invoke FFmpeg
-command = [
-    'ffmpeg',
-    '-y',
-    '-f', 'rawvideo',
-    '-vcodec', 'rawvideo',
-    '-s', '256x240',  # lower this if you can
-    '-pix_fmt', 'rgb24',
-    '-r', '10',  # lower this if you can
-    '-i', '-',
-    '-c:v', 'libx264',
-    '-profile:v', 'baseline',
-    '-preset', 'ultrafast',  # changed from ultrafast
-    '-tune', 'zerolatency',  # changed from fastdecode
-    '-crf', '45',  # raised from 35
-    '-pix_fmt', 'yuv420p',
-    '-f', 'flv',
-    'rtmp://localhost/live/nes_stream',
-]
-
-# Create subprocess for FFmpeg
-proc = None
-if streaming:
-    proc = subprocess.Popen(command, stdin=subprocess.PIPE)
-
 # WebSocket server configuration
 HOST = 'localhost'
-PORT = 9000
+CONTROLLER_PORT = 9000
+FRAME_PORT = 9001
+
+# WebSocket for frame
+frame_websocket = None
 
 execution_count = 0
-render_count = 0
 last_reset_time = time.time()
 
-# WebSocket connection handler
-async def handle_connection(websocket, path):
+# WebSocket connection handler for controller
+async def handle_controller_connection(websocket, path):
     global current_action
     logger.info("Controller WebSocket connection established")
     # Read and process inputs from WebSocket
@@ -81,71 +56,82 @@ async def handle_connection(websocket, path):
         else:
             current_action = BUTTON_MAP.get(message, current_action)
 
+# WebSocket connection handler for frame
+async def handle_frame_connection(websocket, path):
+    global frame_websocket
+    frame_websocket = websocket
+    logger.info("Frame WebSocket connection established")
+    try:
+        while True:
+            # Wait for a message, but do nothing with it.
+            # This keeps the connection open
+            _ = await websocket.recv()
+    except websockets.exceptions.ConnectionClosed:
+        logger.info("Frame WebSocket connection closed")
+    finally:
+        frame_websocket = None
 
-# Start the WebSocket server
-async def start_websocket_server():
-    server = await websockets.serve(handle_connection, HOST, PORT)
-    logger.info(f"Controller WebSocket server started at ws://{HOST}:{PORT}")
+# Start the WebSocket server for controller
+async def start_controller_websocket_server():
+    server = await websockets.serve(handle_controller_connection, HOST, CONTROLLER_PORT)
+    logger.info(f"Controller WebSocket server started at ws://{HOST}:{CONTROLLER_PORT}")
+    await server.wait_closed()
+
+# Start the WebSocket server for frame
+async def start_frame_websocket_server():
+    server = await websockets.serve(handle_frame_connection, HOST, FRAME_PORT)
+    logger.info(f"Frame WebSocket server started at ws://{HOST}:{FRAME_PORT}")
     await server.wait_closed()
 
 # Start the emulation
 async def start_emulation():
-    global execution_count, render_count, last_reset_time
+    global execution_count, last_reset_time, frame_websocket
     # Reset the emulator
     state = emulator.reset()
 
     # Emulation loop and livestreaming
     done = False
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        framecount = 0
-        while not done:
-            global current_action
-            start_time = time.time()
-            state, _, done, _ = emulator.step(action=current_action)
-            state = state.astype('uint8')
-            framecount += 1
+    while not done:
+        global current_action
+        start_time = time.time()
+        state, _, done, _ = emulator.step(action=current_action)
+        state = state.astype('uint8')
 
-            if render_emulator:
-                # Render the emulator state in a window
-                emulator.render()
-                render_count += 1
+        # Render the emulator state in a window
+        emulator.render()
 
-            # Write frame to FFmpeg's stdin only if streaming is enabled
-            if streaming and framecount:
-                loop = asyncio.get_running_loop()
-                await loop.run_in_executor(executor, proc.stdin.write, state.tobytes())
+        # Convert state to PNG and send over websocket
+        if frame_websocket:
+            try:
+                png_data = imageio.imwrite(imageio.RETURN_BYTES, state, format='png')
+                await frame_websocket.send(png_data)
+            except websockets.exceptions.ConnectionClosedOK:
+                logger.info("Client disconnected")
+                frame_websocket = None
+            except Exception as e:
+                logger.error(f"Error: {e}")
+                frame_websocket = None
+        # Increment execution count
+        execution_count += 1
 
-                # Increment execution count
-                execution_count += 1
+        # If a second has passed since the last reset, log and reset the execution count
+        if time.time() - last_reset_time >= 1.0:
+            logger.info(f"frames per second: {execution_count}")
+            execution_count = 0
+            last_reset_time = time.time()
 
-                # If a second has passed since the last reset, log and reset the execution count
-                if time.time() - last_reset_time >= 1.0:
-                    logger.info(f"stdin writes per second: {execution_count}")
-                    logger.info(f"renders per second: {render_count}")
-                    execution_count = render_count = 0
-                    last_reset_time = time.time()
+        # Calculate the time taken for the current iteration
+        elapsed_time = time.time() - start_time
 
-            # Calculate the time taken for the current iteration
-            elapsed_time = time.time() - start_time
+        # Calculate the delay required for 60 FPS (approximately 0.0167 seconds)
+        delay = max(0.0, (1/60) - elapsed_time)
 
-            # Calculate the delay required for 60 FPS (approximately 0.0167 seconds)
-            delay = max(0.0, (1/60) - elapsed_time)
-
-            # Delay for the remaining time until the next frame
-            await asyncio.sleep(delay)
-
-    # Close the subprocess only if streaming is enabled
-    if streaming:
-        proc.stdin.close()
+        # Delay for the remaining time until the next frame
+        await asyncio.sleep(delay)
 
 # Start the event loop
 async def main():
-    # Start the WebSocket server and the emulation concurrently
-    await asyncio.gather(start_websocket_server(), start_emulation())
+    # Start the WebSocket servers and the emulation concurrently
+    await asyncio.gather(start_controller_websocket_server(), start_frame_websocket_server(), start_emulation())
 
-try:
-    asyncio.run(main())
-finally:
-    # Wait for FFmpeg to finish only if streaming is enabled
-    if streaming:
-        proc.communicate()
+asyncio.run(main())
