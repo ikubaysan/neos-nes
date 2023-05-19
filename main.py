@@ -1,4 +1,5 @@
 import subprocess
+import concurrent.futures
 import asyncio
 import logging
 import websockets
@@ -10,18 +11,20 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Initialize NES emulator and load ROM
-emulator = NESEnv('./roms/flappy.nes')
+#emulator = NESEnv('./roms/flappy.nes')
+#emulator = NESEnv(r"C:\Users\Tay\Desktop\Stuff\Games\emulators\fceux\roms\Super Mario Bros.nes")
+emulator = NESEnv(r"C:\Users\Tay\Desktop\Stuff\Games\emulators\fceux\roms\FCControllerTest.nes")
 
 # Define button map
 BUTTON_MAP = {
-    'up': 4,
-    'down': 5,
-    'left': 6,
-    'right': 7,
-    'a': 0,
-    'b': 1,
-    'start': 3,
-    'select': 2,
+    'up': 1 << 4,
+    'down': 1 << 5,
+    'left': 1 << 6,
+    'right': 1 << 7,
+    'a': 1 << 0,
+    'b': 1 << 1,
+    'start': 1 << 3,
+    'select': 1 << 2,
 }
 
 # Create a shared state for the action
@@ -54,47 +57,52 @@ PORT = 9000
 # WebSocket connection handler
 async def handle_connection(websocket, path):
     global current_action
-    logger.info("New WebSocket connection established")
+    logger.info("Controller WebSocket connection established")
     # Read and process inputs from WebSocket
     async for message in websocket:
         # Map message to action and update current_action
-        current_action = BUTTON_MAP.get(message, current_action)
+        logger.info(f"Received message: {message}")
+        if message == "release":
+            current_action = 0
+        else:
+            current_action = BUTTON_MAP.get(message, current_action)
+
 
 # Start the WebSocket server
 async def start_websocket_server():
-    async with websockets.serve(handle_connection, HOST, PORT):
-        logger.info(f"WebSocket server started at ws://{HOST}:{PORT}")
-        await asyncio.Future()
+    server = await websockets.serve(handle_connection, HOST, PORT)
+    logger.info(f"Controller WebSocket server started at ws://{HOST}:{PORT}")
+    await server.wait_closed()
 
-# Start the event loop
-async def main():
-    # Start the WebSocket server
-    server_task = asyncio.create_task(start_websocket_server())
-    logger.info("Started websocket.")
-
+# Start the emulation
+async def start_emulation():
     # Reset the emulator
     state = emulator.reset()
 
     # Emulation loop and livestreaming
     done = False
-    while not done:
-        global current_action
-        # Emulate frame and get RGB data
-        state, _, done, _ = emulator.step(current_action)
-        state = state.astype('uint8')
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        while not done:
+            global current_action
+            logger.info(f"Current action: {current_action}")
+            # Emulate frame and get RGB data
+            state, _, done, _ = emulator.step(current_action)
+            state = state.astype('uint8')
 
-        # Write frame to FFmpeg's stdin
-        proc.stdin.write(state.tobytes())
-        #logger.info("Wrote frame.")
-
-        # Break the loop if needed
-        if done:
-            state = emulator.reset()
-            done = False
+            # Write frame to FFmpeg's stdin
+            loop = asyncio.get_running_loop()
+            await loop.run_in_executor(executor, proc.stdin.write, state.tobytes())
+            # Break the loop if needed
+            if done:
+                state = emulator.reset()
+                done = False
 
     proc.stdin.close()
-    # Cancel the WebSocket server task
-    server_task.cancel()
+
+# Start the event loop
+async def main():
+    # Start the WebSocket server and the emulation concurrently
+    await asyncio.gather(start_websocket_server(), start_emulation())
 
 try:
     asyncio.run(main())
