@@ -92,8 +92,8 @@ async def start_emulation():
     # Emulation loop and livestreaming
     done = False
     while not done:
+        # Process frame
         global current_action
-        start_time = time.time()
         state, _, done, _ = emulator.step(action=current_action)
         state = state.astype('uint8')
 
@@ -111,6 +111,7 @@ async def start_emulation():
             except Exception as e:
                 logger.error(f"Error: {e}")
                 frame_websocket = None
+
         # Increment execution count
         execution_count += 1
 
@@ -120,14 +121,9 @@ async def start_emulation():
             execution_count = 0
             last_reset_time = time.time()
 
-        # Calculate the time taken for the current iteration
-        elapsed_time = time.time() - start_time
+        # Constant delay for each frame
+        await asyncio.sleep(1.0 / 60.0)  # Change this value to set the desired frame rate
 
-        # Calculate the delay required for 60 FPS (approximately 0.0167 seconds)
-        delay = max(0.0, (1/60) - elapsed_time)
-
-        # Delay for the remaining time until the next frame
-        await asyncio.sleep(delay)
 
 # Start the event loop
 async def main():
