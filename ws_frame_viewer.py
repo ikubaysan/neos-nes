@@ -25,29 +25,26 @@ class DisplayStrategy(ABC):
     def display(self, frame):
         pass
 
-class SimpleDisplayStrategy(DisplayStrategy):
-    def display(self, frame):
-        cv2.imshow('NES Emulator Frame Viewer', frame)
+    def show_frame(self, frame, window_name):
+        cv2.imshow(window_name, frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             cv2.destroyAllWindows()
             return False
         return True
+
+class SimpleDisplayStrategy(DisplayStrategy):
+    def display(self, frame):
+        return self.show_frame(frame, 'NES Emulator Frame Viewer (Simple)')
 
 class CanvasDisplayStrategy(DisplayStrategy):
     def __init__(self):
         self.canvas = np.zeros((240, 256, 3), dtype=np.uint8)  # Initialize an empty canvas
 
     def display(self, frame):
-        # Iterate over each pixel in the frame and assign it to the corresponding canvas pixel
         for x in range(frame.shape[0]):
             for y in range(frame.shape[1]):
                 self.canvas[x, y] = frame[x, y]
-        cv2.imshow('NES Emulator Frame Viewer', self.canvas)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            cv2.destroyAllWindows()
-            return False
-        return True
-
+        return self.show_frame(self.canvas, 'NES Emulator Frame Viewer (Canvas)')
 
 async def receive_frames(display_strategy: DisplayStrategy):
     uri = f"ws://{HOST}:{PORT}"
