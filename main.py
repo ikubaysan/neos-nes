@@ -4,7 +4,9 @@ import websockets
 import time
 import imageio
 import cv2
+from operator import itemgetter
 from nes_py import NESEnv
+import numpy as np
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -55,15 +57,39 @@ advanced_display = True
 last_frame = None
 last_full_frame_time = time.time()
 
+
 def stringify_changed_pixels(changed):
-    return ";".join([f"{x},{y}:{','.join(map(str, color))}" for key, color in changed.items() for x, y in [key.split(",")]])
+    # Sort by x, then by y coordinates
+    sorted_pixels = sorted(changed.items(), key=lambda item: tuple(map(int, item[0].split(','))))
+
+    lines = []
+    current_line = None
+
+    for item in sorted_pixels:
+        key, color = item
+        x, y = map(int, key.split(','))
+
+        if current_line is not None:
+            last_x, last_y, last_color, _ = current_line
+
+            if color == last_color and x == last_x and y == last_y + 1:
+                # Extend current line
+                current_line[3] = y
+                continue
+
+        # Start new line
+        current_line = [x, y, color, y]
+        lines.append(current_line)
+
+    return ";".join([f"{x},{y1}-{y2}:{','.join(map(str, color))}" for x, y1, color, y2 in lines])
+
 
 def changed_pixels(old_frame, new_frame):
     changed = {}
 
     for x in range(len(new_frame)):
         for y in range(len(new_frame[x])):
-            if old_frame is None or new_frame[x][y].any() != old_frame[x][y].any():
+            if old_frame is None or not np.array_equal(new_frame[x][y], old_frame[x][y]):
                 key = f"{x},{y}"  # convert (x, y) tuple to a string
                 changed[key] = list(new_frame[x][y])  # convert numpy array to list
     return changed

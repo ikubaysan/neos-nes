@@ -3,6 +3,7 @@ import websockets
 import cv2
 import numpy as np
 import logging
+import re
 from abc import ABC, abstractmethod
 
 # Configure logging
@@ -19,9 +20,15 @@ PORT = 9001
 
 def parse_changed_pixels(data):
     pixel_data = data.split(";")
-    return {tuple(map(int, p.split(":")[0].split(','))): list(map(int, p.split(":")[1].split(','))) for p in pixel_data}
-
-
+    changes = {}
+    for p in pixel_data:
+        match = re.match(r'(\d+),(\d+)-(\d+):(\d+),(\d+),(\d+)', p)
+        if match:
+            x = int(match.group(1))
+            y_range = (int(match.group(2)), int(match.group(3)))  # Use tuple instead of list
+            color = [int(match.group(4)), int(match.group(5)), int(match.group(6))]
+            changes[(x, y_range)] = color
+    return changes
 class DisplayStrategy(ABC):
     @abstractmethod
     def display(self, frame):
@@ -39,8 +46,9 @@ class AdvancedDisplayStrategy(DisplayStrategy):
         self.canvas = np.zeros((240, 256, 3), dtype=np.uint8)  # Initialize an empty canvas
 
     def update_canvas(self, changes):
-        for (x, y), color in changes.items():
-            self.canvas[x][y] = color
+        for (x, y_range), color in changes.items():
+            for y in range(y_range[0], y_range[1] + 1):
+                self.canvas[x][y] = color
 
     def display(self, frame):
         changed_pixels = 0
@@ -70,6 +78,7 @@ class AdvancedDisplayStrategy(DisplayStrategy):
                         message_bytes = len(message.encode('utf-8'))
                         try:
                             logger.info(f"Received message with {message_bytes} bytes.")
+                            print(message)
                             changes = parse_changed_pixels(message)
                             self.update_canvas(changes)
                         except:
