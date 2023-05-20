@@ -36,17 +36,23 @@ class SimpleDisplayStrategy(DisplayStrategy):
     def display(self, frame):
         return self.show_frame(frame, 'NES Emulator Frame Viewer (Simple)')
 
-class CanvasDisplayStrategy(DisplayStrategy):
+class AdvancedDisplayStrategy(DisplayStrategy):
     def __init__(self):
         self.canvas = np.zeros((240, 256, 3), dtype=np.uint8)  # Initialize an empty canvas
 
     def display(self, frame):
         changed_pixels = 0
-        for x in range(frame.shape[0]):
-            for y in range(frame.shape[1]):
-                # If this is the first frame, or the pixel has changed since the last frame, update the canvas
-                if not np.array_equal(frame[x, y], self.canvas[x, y]):
-                    self.canvas[x, y] = frame[x, y]
+        for x in range(len(frame)):
+            for y in range(len(frame[x])):
+                pixel_changed = False
+                for i in range(len(frame[x][y])):
+                    # compare the color channels for this pixel
+                    #pixel = frame[x][y]
+                    if frame[x][y][i] != self.canvas[x][y][i]:
+                        pixel_changed = True
+                        break
+                if pixel_changed:
+                    self.canvas[x][y] = frame[x][y]
                     changed_pixels += 1
         logger.info(f"Updated {changed_pixels} pixels")
         return self.show_frame(self.canvas, 'NES Emulator Frame Viewer (Canvas)')
@@ -76,5 +82,5 @@ async def receive_frames(display_strategy: DisplayStrategy):
 
 if __name__ == "__main__":
     #display_strategy = SimpleDisplayStrategy()
-    display_strategy = CanvasDisplayStrategy()
+    display_strategy = AdvancedDisplayStrategy()
     asyncio.run(receive_frames(display_strategy))
