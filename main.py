@@ -11,8 +11,18 @@ from nes_py.wrappers import JoypadSpace
 from nes_py import NESEnv
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# Create a formatter with the desired format and date format
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+
+# Create a handler and set the formatter
+handler = logging.StreamHandler()
+handler.setFormatter(formatter)
+
+# Add the handler to the logger
+logger.addHandler(handler)
 
 # Initialize NES emulator and load ROM
 emulator = NESEnv(r"C:\Users\Tay\Desktop\Stuff\Games\emulators\fceux\roms\Super Mario Bros.nes")
