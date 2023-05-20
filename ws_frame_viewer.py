@@ -41,9 +41,14 @@ class CanvasDisplayStrategy(DisplayStrategy):
         self.canvas = np.zeros((240, 256, 3), dtype=np.uint8)  # Initialize an empty canvas
 
     def display(self, frame):
+        changed_pixels = 0
         for x in range(frame.shape[0]):
             for y in range(frame.shape[1]):
-                self.canvas[x, y] = frame[x, y]
+                # If this is the first frame, or the pixel has changed since the last frame, update the canvas
+                if not np.array_equal(frame[x, y], self.canvas[x, y]):
+                    self.canvas[x, y] = frame[x, y]
+                    changed_pixels += 1
+        logger.info(f"Updated {changed_pixels} pixels")
         return self.show_frame(self.canvas, 'NES Emulator Frame Viewer (Canvas)')
 
 async def receive_frames(display_strategy: DisplayStrategy):
@@ -58,7 +63,7 @@ async def receive_frames(display_strategy: DisplayStrategy):
                         frame = imageio.imread(png_data)
                         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB
                         resolution = f"{frame.shape[1]}x{frame.shape[0]}"
-                        logger.info(f"Received frame with resolution: {resolution}")
+                        #logger.info(f"Received frame with resolution: {resolution}")
                     except:
                         logger.error(f"Could not read data as frame: {png_data}")
                         continue
@@ -66,8 +71,8 @@ async def receive_frames(display_strategy: DisplayStrategy):
                         break
         except Exception as e:
             logger.error(f"Error: {e}", exc_info=True)
-            logger.info("Trying to reconnect in 5 seconds...")
-            await asyncio.sleep(5)
+            logger.info("Trying to reconnect in 3 seconds...")
+            await asyncio.sleep(3)
 
 if __name__ == "__main__":
     #display_strategy = SimpleDisplayStrategy()

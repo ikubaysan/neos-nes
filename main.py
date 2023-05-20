@@ -111,11 +111,10 @@ async def start_emulation():
 
         # Convert state to PNG and send over websocket
         failed_sockets = set()
-        for websocket in frame_websockets:
+        for websocket in list(frame_websockets):
             try:
                 png_data = imageio.imwrite(imageio.RETURN_BYTES, state, format='png')
                 await websocket.send(png_data)
-                #await websocket.send(f"A frame at {str(time.time())}")
             except websockets.exceptions.ConnectionClosedOK:
                 logger.info("Client disconnected")
                 failed_sockets.add(websocket)
