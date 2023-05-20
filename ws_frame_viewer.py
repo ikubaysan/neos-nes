@@ -1,6 +1,7 @@
 import asyncio
 import websockets
 import zlib
+import json
 import cv2
 import numpy as np
 import imageio
@@ -20,6 +21,11 @@ logger.addHandler(handler)
 HOST = '10.0.0.147'
 PORT = 9001
 
+def parse_changed_pixels(data):
+    pixel_data = data.split(";")
+    return {tuple(map(int, p.split(":")[0].split(','))): list(map(int, p.split(":")[1].split(','))) for p in pixel_data}
+
+
 class DisplayStrategy(ABC):
     @abstractmethod
     def display(self, frame):
@@ -32,13 +38,42 @@ class DisplayStrategy(ABC):
             return False
         return True
 
+
 class SimpleDisplayStrategy(DisplayStrategy):
     def display(self, frame):
         return self.show_frame(frame, 'NES Emulator Frame Viewer (Simple)')
 
+    async def receive_frames(self, display_strategy: DisplayStrategy):
+        uri = f"ws://{HOST}:{PORT}"
+        logger.info(f"Using display strategy: {display_strategy.__class__.__name__}")
+        while True:
+            try:
+                async with websockets.connect(uri) as websocket:
+                    while True:
+                        png_data = await websocket.recv()
+                        try:
+                            frame = imageio.imread(png_data)
+                            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB
+                            resolution = f"{frame.shape[1]}x{frame.shape[0]}"
+                            # logger.info(f"Received frame with resolution: {resolution}")
+                        except:
+                            logger.error(f"Could not read data as frame: {png_data}")
+                            continue
+                        if not display_strategy.display(frame):
+                            break
+            except Exception as e:
+                logger.error(f"Error: {e}", exc_info=True)
+                logger.info("Trying to reconnect in 3 seconds...")
+                await asyncio.sleep(3)
+
+
 class AdvancedDisplayStrategy(DisplayStrategy):
     def __init__(self):
         self.canvas = np.zeros((240, 256, 3), dtype=np.uint8)  # Initialize an empty canvas
+
+    def update_canvas(self, changes):
+        for (x, y), color in changes.items():
+            self.canvas[x][y] = color
 
     def display(self, frame):
         changed_pixels = 0
@@ -57,30 +92,31 @@ class AdvancedDisplayStrategy(DisplayStrategy):
         logger.info(f"Updated {changed_pixels} pixels")
         return self.show_frame(self.canvas, 'NES Emulator Frame Viewer (Canvas)')
 
-async def receive_frames(display_strategy: DisplayStrategy):
-    uri = f"ws://{HOST}:{PORT}"
-    logger.info(f"Using display strategy: {display_strategy.__class__.__name__}")
-    while True:
-        try:
-            async with websockets.connect(uri) as websocket:
-                while True:
-                    png_data = await websocket.recv()
-                    try:
-                        frame = imageio.imread(png_data)
-                        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB
-                        resolution = f"{frame.shape[1]}x{frame.shape[0]}"
-                        #logger.info(f"Received frame with resolution: {resolution}")
-                    except:
-                        logger.error(f"Could not read data as frame: {png_data}")
-                        continue
-                    if not display_strategy.display(frame):
-                        break
-        except Exception as e:
-            logger.error(f"Error: {e}", exc_info=True)
-            logger.info("Trying to reconnect in 3 seconds...")
-            await asyncio.sleep(3)
+    async def receive_frames(self):
+        uri = f"ws://{HOST}:{PORT}"
+        logger.info(f"Using display strategy: {display_strategy.__class__.__name__}")
+        while True:
+            try:
+                async with websockets.connect(uri, max_size=1024*1024*10) as websocket:
+                    while True:
+                        message = await websocket.recv()
+                        message_bytes = len(message.encode('utf-8'))
+                        try:
+                            logger.info(f"Received message with {message_bytes} bytes.")
+                            #changes = {tuple(map(int, k.split(','))): v for k, v in json.loads(message).items()}
+                            changes = parse_changed_pixels(message)
+                            #logger.info("Received changes")
+                            self.update_canvas(changes)
+                        except:
+                            logger.error(f"Could not read data as change: {message}", exc_info=True)
+                            continue
+                        if not display_strategy.display(display_strategy.canvas):
+                            break
+            except Exception as e:
+                logger.error(f"Error: {e}", exc_info=True)
+                logger.info("Trying to reconnect in 3 seconds...")
+                await asyncio.sleep(3)
 
 if __name__ == "__main__":
-    #display_strategy = SimpleDisplayStrategy()
     display_strategy = AdvancedDisplayStrategy()
-    asyncio.run(receive_frames(display_strategy))
+    asyncio.run(display_strategy.receive_frames())

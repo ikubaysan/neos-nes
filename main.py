@@ -5,6 +5,7 @@ import logging
 import websockets
 import time
 import imageio
+import json
 import cv2
 import numpy as np
 from nes_py.wrappers import JoypadSpace
@@ -54,6 +55,25 @@ frame_websockets = set()
 execution_count = 0
 last_reset_time = time.time()
 
+# Create a shared state for the action...
+advanced_display = True
+last_frame = None
+last_full_frame_time = time.time()
+
+def stringify_changed_pixels(changed):
+    return ";".join([f"{x},{y}:{','.join(map(str, color))}" for key, color in changed.items() for x, y in [key.split(",")]])
+
+def changed_pixels(old_frame, new_frame):
+    changed = {}
+
+    for x in range(len(new_frame)):
+        for y in range(len(new_frame[x])):
+            if old_frame is None or new_frame[x][y].any() != old_frame[x][y].any():
+                key = f"{x},{y}"  # convert (x, y) tuple to a string
+                changed[key] = list(new_frame[x][y])  # convert numpy array to list
+    return changed
+
+
 # WebSocket connection handler for controller
 async def handle_controller_connection(websocket, path):
     global current_action
@@ -94,7 +114,7 @@ async def start_frame_websocket_server():
     await server.wait_closed()
 
 async def start_emulation():
-    global execution_count, last_reset_time
+    global execution_count, last_reset_time, last_frame, last_full_frame_time
     # Reset the emulator
     state = emulator.reset()
 
@@ -106,21 +126,40 @@ async def start_emulation():
         state, _, done, _ = emulator.step(action=current_action)
         state = state.astype('uint8')
 
+        if advanced_display:
+            # Potentially force sending full frame
+            if last_frame is None or time.time() - last_full_frame_time >= 10:
+                last_full_frame_time = time.time()
+                changes = changed_pixels(None, state)  # Send all pixels as changed
+            else:
+                changes = changed_pixels(last_frame, state)
+            last_frame = state
+        else:
+            changes = changed_pixels(None, state)  # Send all pixels as changed
+
+        logger.info(f"{len(changes)} pixels changed.")
+        png_data = stringify_changed_pixels(changes)
+
+        # Log the size of the message in bytes
+        message_size_bytes = len(png_data)
+        logger.info(f"Message size: {message_size_bytes} bytes")
+
         # Render the emulator state in a window
         emulator.render()
 
         # Convert state to PNG and send over websocket
         failed_sockets = set()
-        for websocket in list(frame_websockets):
-            try:
-                png_data = imageio.imwrite(imageio.RETURN_BYTES, state, format='png')
-                await websocket.send(png_data)
-            except websockets.exceptions.ConnectionClosedOK:
-                logger.info("Client disconnected")
-                failed_sockets.add(websocket)
-            except Exception as e:
-                logger.error(f"Error: {e}")
-                failed_sockets.add(websocket)
+
+        if message_size_bytes > 0:
+            for websocket in list(frame_websockets):
+                try:
+                    await websocket.send(png_data)
+                except websockets.exceptions.ConnectionClosedOK:
+                    logger.info("Client disconnected")
+                    failed_sockets.add(websocket)
+                except Exception as e:
+                    logger.error(f"Error: {e}")
+                    failed_sockets.add(websocket)
 
         # Remove failed sockets from active set
         frame_websockets.difference_update(failed_sockets)
@@ -135,7 +174,6 @@ async def start_emulation():
 
         # Constant delay for each frame
         await asyncio.sleep(1.0 / 30.0)
-
 
 # Start the event loop
 async def main():
