@@ -1,12 +1,8 @@
 import asyncio
 import websockets
-import zlib
-import json
 import cv2
 import numpy as np
-import imageio
 import logging
-import abc
 from abc import ABC, abstractmethod
 
 # Configure logging
@@ -37,35 +33,6 @@ class DisplayStrategy(ABC):
             cv2.destroyAllWindows()
             return False
         return True
-
-
-class SimpleDisplayStrategy(DisplayStrategy):
-    def display(self, frame):
-        return self.show_frame(frame, 'NES Emulator Frame Viewer (Simple)')
-
-    async def receive_frames(self, display_strategy: DisplayStrategy):
-        uri = f"ws://{HOST}:{PORT}"
-        logger.info(f"Using display strategy: {display_strategy.__class__.__name__}")
-        while True:
-            try:
-                async with websockets.connect(uri) as websocket:
-                    while True:
-                        png_data = await websocket.recv()
-                        try:
-                            frame = imageio.imread(png_data)
-                            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB
-                            resolution = f"{frame.shape[1]}x{frame.shape[0]}"
-                            # logger.info(f"Received frame with resolution: {resolution}")
-                        except:
-                            logger.error(f"Could not read data as frame: {png_data}")
-                            continue
-                        if not display_strategy.display(frame):
-                            break
-            except Exception as e:
-                logger.error(f"Error: {e}", exc_info=True)
-                logger.info("Trying to reconnect in 3 seconds...")
-                await asyncio.sleep(3)
-
 
 class AdvancedDisplayStrategy(DisplayStrategy):
     def __init__(self):
@@ -103,9 +70,7 @@ class AdvancedDisplayStrategy(DisplayStrategy):
                         message_bytes = len(message.encode('utf-8'))
                         try:
                             logger.info(f"Received message with {message_bytes} bytes.")
-                            #changes = {tuple(map(int, k.split(','))): v for k, v in json.loads(message).items()}
                             changes = parse_changed_pixels(message)
-                            #logger.info("Received changes")
                             self.update_canvas(changes)
                         except:
                             logger.error(f"Could not read data as change: {message}", exc_info=True)
