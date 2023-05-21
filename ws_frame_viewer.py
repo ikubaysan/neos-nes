@@ -48,26 +48,20 @@ class AdvancedDisplayStrategy(DisplayStrategy):
     def __init__(self):
         self.canvas = np.zeros((240, 256, 3), dtype=np.uint8)  # Initialize an empty canvas
 
-    def update_canvas(self, changes):
-        for (x, y_range), color in changes.items():
-            for y in range(y_range[0], y_range[1] + 1):
+    def update_canvas(self, message):
+        pixel_ranges = re.findall(r'\d+-\d+_.', message)
+        for pixel_range in pixel_ranges:
+            range_str = pixel_range[:-2]
+            color_str = pixel_range[-1]
+
+            start, end = map(int, range_str.split("-"))
+            color = utf32_to_rgb(color_str)
+            for i in range(start, end + 1):
+                x, y = i // 256, i % 256  # Convert 1D position back to 2D
                 self.canvas[x][y] = color
 
     def display(self, frame):
-        changed_pixels = 0
-        for x in range(len(frame)):
-            for y in range(len(frame[x])):
-                pixel_changed = False
-                for i in range(len(frame[x][y])):
-                    # compare the color channels for this pixel
-                    #pixel = frame[x][y]
-                    if frame[x][y][i] != self.canvas[x][y][i]:
-                        pixel_changed = True
-                        break
-                if pixel_changed:
-                    self.canvas[x][y] = frame[x][y]
-                    changed_pixels += 1
-        #logger.info(f"Updated {changed_pixels} pixels")
+        self.update_canvas(frame)
         return self.show_frame(self.canvas, 'NES Emulator Frame Viewer (Canvas)')
 
     async def receive_frames(self):
@@ -75,22 +69,18 @@ class AdvancedDisplayStrategy(DisplayStrategy):
         logger.info(f"Using display strategy: {display_strategy.__class__.__name__}")
         while True:
             try:
-                async with websockets.connect(uri, max_size=1024*1024*10) as websocket:
+                async with websockets.connect(uri, max_size=1024 * 1024 * 10) as websocket:
                     while True:
                         message = await websocket.recv()
                         message_bytes = len(message.encode('utf-8'))
                         logger.info(f"Received message with {message_bytes} bytes, {len(message)} chars.")
-                        try:
-                            frame = string_to_frame(message)
-                        except:
-                            logger.error(f"Could not read data as change: {message}", exc_info=True)
-                            continue
-                        if not display_strategy.display(frame):
+                        if not display_strategy.display(message):
                             break
             except Exception as e:
                 logger.error(f"Error: {e}", exc_info=True)
                 logger.info("Trying to reconnect in 3 seconds...")
                 await asyncio.sleep(3)
+
 
 if __name__ == "__main__":
     display_strategy = AdvancedDisplayStrategy()

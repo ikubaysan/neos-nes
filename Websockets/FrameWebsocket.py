@@ -31,8 +31,25 @@ class FrameWebsocket(BaseWebsocket):
         return chr(rgb_int)
 
     def frame_to_string(self, frame):
-        """Takes a frame and converts it into a string of UTF-32 characters"""
-        return ''.join([self.rgb_to_utf32(*pixel) for row in frame for pixel in row])
+        """Takes a frame and converts it into a message of pixel ranges and colors"""
+
+        last_color = None
+        same_color_start = 0
+        message = ""
+        total_pixels = frame.shape[0] * frame.shape[1]
+
+        for i, pixel in enumerate(frame.reshape(-1, 3)):
+            color = self.rgb_to_utf32(*pixel)
+            if color != last_color:
+                if last_color is not None:
+                    message += f"{same_color_start}-{i-1}_{last_color}"
+                same_color_start = i
+                last_color = color
+
+            if i == total_pixels - 1:  # the end of the pixels, add the last color
+                message += f"{same_color_start}-{i}_{last_color}"
+
+        return message
 
     async def broadcast(self, message):
         message_size_bytes = len(message)
