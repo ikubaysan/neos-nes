@@ -1,4 +1,5 @@
 from Websockets.BaseWebsocket import *
+from frame_to_string_cy import *
 
 logger = logging.getLogger(__name__)
 

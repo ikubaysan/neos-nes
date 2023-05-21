@@ -4,3 +4,4 @@ pyrtmp
 websockets
 imageio
 opencv-python
+cython

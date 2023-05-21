@@ -5,6 +5,7 @@ from Websockets.ControllerWebsocket import ControllerWebsocket
 from Websockets.FrameWebsocket import FrameWebsocket
 from Helpers.GeneralHelpers import *
 import time
+from frame_to_string_cy import frame_to_string_cy
 
 # Configure logging
 logger = logging.getLogger(__name__)
