@@ -10,25 +10,7 @@ class FrameWebsocket(BaseWebsocket):
         self.last_frame = None
 
     @staticmethod
-    def rgb_to_utf32(r, g, b):
-        """Takes an RGB tuple and converts it into a single UTF-32 character"""
-        r >>= 2
-        g >>= 2
-        b >>= 2
-
-        rgb_int = b << 10 | g << 5 | r  # Swap red and blue channels
-
-        # Adjust if in the Unicode surrogate range
-        if 0xD800 <= rgb_int <= 0xDFFF:
-            logger.info("Avoiding Unicode surrogate range")
-            if rgb_int < 0xDC00:
-                rgb_int = 0xD7FF  # Maximum value just before the surrogate range
-            else:
-                rgb_int = 0xE000  # Minimum value just after the surrogate range
-
-        return chr(rgb_int)
-
-    def _frame_to_string_common(self, frame, changed_pixels=None) -> str:
+    def _frame_to_string_common(frame, changed_pixels=None) -> str:
         last_color = None
         same_color_start = None
         message = ""
@@ -45,7 +27,23 @@ class FrameWebsocket(BaseWebsocket):
 
         # Iterate over pixels that changed
         for i, (pixel, changed) in enumerate(zip(frame_copy, changed_pixels)):
-            color = self.rgb_to_utf32(*pixel)
+            """Take an RGB tuple and convert it into a single UTF-32 character"""
+            r, g, b = pixel
+            r >>= 2
+            g >>= 2
+            b >>= 2
+
+            rgb_int = b << 10 | g << 5 | r  # Swap red and blue channels
+
+            # Adjust if in the Unicode surrogate range
+            if 0xD800 <= rgb_int <= 0xDFFF:
+                logger.info("Avoiding Unicode surrogate range")
+                if rgb_int < 0xDC00:
+                    rgb_int = 0xD7FF  # Maximum value just before the surrogate range
+                else:
+                    rgb_int = 0xE000  # Minimum value just after the surrogate range
+
+            color = chr(rgb_int)
 
             if changed and color != last_color:
                 if last_color is not None and same_color_start is not None:
@@ -60,9 +58,6 @@ class FrameWebsocket(BaseWebsocket):
             if i == total_pixels - 1 and same_color_start is not None:  # the end of the pixels, add the last color
                 message += f"{same_color_start}+{i - same_color_start}_{last_color}"
 
-        # Update the last frame
-        self.last_frame = frame.copy()
-
         return message
 
     def full_frame_to_string(self, frame):
@@ -75,7 +70,9 @@ class FrameWebsocket(BaseWebsocket):
         else:
             changed_pixels = np.ones((frame.shape[0], frame.shape[1]), dtype=bool)
 
-        return self._frame_to_string_common(frame, changed_pixels)
+        message = self._frame_to_string_common(frame, changed_pixels)
+        self.last_frame = frame
+        return message
 
     async def broadcast(self, message):
         message_size_bytes = len(message)
