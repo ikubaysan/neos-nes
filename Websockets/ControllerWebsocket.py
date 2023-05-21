@@ -1,7 +1,4 @@
-import asyncio
-import websockets
-import logging
-from Websockets.BaseWebsocket import BaseWebsocket
+from Websockets.BaseWebsocket import *
 
 logger = logging.getLogger(__name__)
 

@@ -1,7 +1,4 @@
-import asyncio
-import websockets
-import logging
-from Websockets.BaseWebsocket import BaseWebsocket
+from Websockets.BaseWebsocket import *
 
 logger = logging.getLogger(__name__)
 
@@ -10,6 +7,7 @@ class FrameWebsocket(BaseWebsocket):
     def __init__(self, host, port):
         super().__init__(host, port)
         self.frame_websockets = set()
+        self.last_frame = None
 
     @staticmethod
     def rgb_to_utf32(r, g, b):
@@ -30,15 +28,22 @@ class FrameWebsocket(BaseWebsocket):
 
         return chr(rgb_int)
 
-    def frame_to_string(self, frame):
+    def full_frame_to_string(self, frame):
         """Takes a frame and converts it into a message of pixel ranges and colors"""
+
+        # Make a copy of frame to ensure it's not modified elsewhere
+        frame_copy = frame.copy()
 
         last_color = None
         same_color_start = 0
         message = ""
         total_pixels = frame.shape[0] * frame.shape[1]
 
-        for i, pixel in enumerate(frame.reshape(-1, 3)):
+        # Flatten the frame for simpler iteration
+        frame_copy = frame_copy.reshape(-1, 3)
+
+        # Iterate over all pixels
+        for i, pixel in enumerate(frame_copy):
             color = self.rgb_to_utf32(*pixel)
             if color != last_color:
                 if last_color is not None:
@@ -48,6 +53,50 @@ class FrameWebsocket(BaseWebsocket):
 
             if i == total_pixels - 1:  # the end of the pixels, add the last color
                 message += f"{same_color_start}+{i - same_color_start}_{last_color}"
+
+        # Update the last frame
+        self.last_frame = frame.copy()
+
+        return message
+
+    def frame_to_string(self, frame):
+        """Takes a frame and converts it into a message of pixel ranges and colors"""
+
+        # Make a copy of frame to ensure it's not modified elsewhere
+        frame_copy = frame.copy()
+
+        last_color = None
+        same_color_start = 0
+        message = ""
+        total_pixels = frame.shape[0] * frame.shape[1]
+
+        # Compare frame to the last frame and find changed pixels
+        if self.last_frame is not None:
+            changed_pixels = np.any(frame_copy != self.last_frame, axis=-1)
+        else:
+            changed_pixels = np.ones((frame.shape[0], frame.shape[1]), dtype=bool)
+
+        # Flatten the changed pixels and the frame for simpler iteration
+        changed_pixels = changed_pixels.reshape(-1)
+        frame_copy = frame_copy.reshape(-1, 3)
+
+        # Iterate over pixels that changed
+        for i, (pixel, changed) in enumerate(zip(frame_copy, changed_pixels)):
+            if not changed:
+                continue
+
+            color = self.rgb_to_utf32(*pixel)
+            if color != last_color:
+                if last_color is not None:
+                    message += f"{same_color_start}+{i - 1 - same_color_start}_{last_color}"
+                same_color_start = i
+                last_color = color
+
+            if i == total_pixels - 1:  # the end of the pixels, add the last color
+                message += f"{same_color_start}+{i - same_color_start}_{last_color}"
+
+        # Update the last frame
+        self.last_frame = frame.copy()
 
         return message
 
