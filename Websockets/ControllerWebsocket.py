@@ -1,10 +1,11 @@
 import asyncio
 import websockets
 import logging
+from Websockets.BaseWebsocket import BaseWebsocket
 
 logger = logging.getLogger(__name__)
 
-class ControllerWebsocket:
+class ControllerWebsocket(BaseWebsocket):
 
     BUTTON_MAP = {
         'a': 1,
@@ -18,11 +19,10 @@ class ControllerWebsocket:
     }
 
     def __init__(self, host, port):
-        self.host = host
-        self.port = port
+        super().__init__(host, port)
         self.current_action = 0
 
-    async def handle_controller_connection(self, websocket, path):
+    async def handle_connection(self, websocket, path):
         logger.info("Controller WebSocket connection established")
         async for message in websocket:
             logger.info(f"Received message: {message}")
@@ -31,7 +31,3 @@ class ControllerWebsocket:
             else:
                 self.current_action = self.BUTTON_MAP.get(message, self.current_action)
 
-    async def start(self):
-        server = await websockets.serve(self.handle_controller_connection, self.host, self.port)
-        logger.info(f"Controller WebSocket server started at ws://{self.host}:{self.port}")
-        await server.wait_closed()

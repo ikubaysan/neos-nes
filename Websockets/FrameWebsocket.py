@@ -1,14 +1,14 @@
 import asyncio
 import websockets
 import logging
+from Websockets.BaseWebsocket import BaseWebsocket
 
 logger = logging.getLogger(__name__)
 
-class FrameWebsocket:
+class FrameWebsocket(BaseWebsocket):
 
     def __init__(self, host, port):
-        self.host = host
-        self.port = port
+        super().__init__(host, port)
         self.frame_websockets = set()
 
     @staticmethod
@@ -17,9 +17,6 @@ class FrameWebsocket:
         r >>= 2
         g >>= 2
         b >>= 2
-
-        # Without red and blue channels swapped
-        # rgb_int = r<<10 | g<<5 | b
 
         rgb_int = b << 10 | g << 5 | r  # Swap red and blue channels
 
@@ -30,9 +27,12 @@ class FrameWebsocket:
                 rgb_int = 0xD7FF  # Maximum value just before the surrogate range
             else:
                 rgb_int = 0xE000  # Minimum value just after the surrogate range
-        # logger.info(f"RGB int: {rgb_int}")
+
         return chr(rgb_int)
 
+    def frame_to_string(self, frame):
+        """Takes a frame and converts it into a string of UTF-32 characters"""
+        return ''.join([self.rgb_to_utf32(*pixel) for row in frame for pixel in row])
 
     async def broadcast(self, message):
         message_size_bytes = len(message)
@@ -46,7 +46,6 @@ class FrameWebsocket:
         for websocket in list(self.frame_websockets):
             try:
                 await websocket.send(message)
-                pass
             except websockets.exceptions.ConnectionClosedOK:
                 logger.info("Client disconnected")
                 failed_sockets.add(websocket)
@@ -57,12 +56,7 @@ class FrameWebsocket:
         # Remove failed sockets from active set
         self.frame_websockets.difference_update(failed_sockets)
 
-
-    def frame_to_string(self, frame):
-        """Takes a frame and converts it into a string of UTF-32 characters"""
-        return ''.join([self.rgb_to_utf32(*pixel) for row in frame for pixel in row])
-
-    async def handle_frame_connection(self, websocket, path):
+    async def handle_connection(self, websocket, path):
         self.frame_websockets.add(websocket)
         logger.info("Frame WebSocket connection established")
         try:
@@ -72,8 +66,3 @@ class FrameWebsocket:
             logger.info("Frame WebSocket connection closed")
         finally:
             self.frame_websockets.remove(websocket)
-
-    async def start(self):
-        server = await websockets.serve(self.handle_frame_connection, self.host, self.port)
-        logger.info(f"Frame WebSocket server started at ws://{self.host}:{self.port}")
-        await server.wait_closed()
