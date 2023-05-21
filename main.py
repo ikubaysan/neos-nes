@@ -57,42 +57,14 @@ advanced_display = True
 last_frame = None
 last_full_frame_time = time.time()
 
+def rgb_to_utf32(rgb_values):
+    """Takes an RGB tuple and converts it into a single UTF-32 character"""
+    rgb_int = int(''.join([f"{x:08b}" for x in rgb_values]), 2)
+    return chr(rgb_int)
 
-def stringify_changed_pixels(changed):
-    # Sort by x, then by y coordinates
-    sorted_pixels = sorted(changed.items(), key=lambda item: tuple(map(int, item[0].split(','))))
-
-    lines = []
-    current_line = None
-
-    for item in sorted_pixels:
-        key, color = item
-        x, y = map(int, key.split(','))
-
-        if current_line is not None:
-            last_x, last_y, last_color, _ = current_line
-
-            if color == last_color and x == last_x and y == last_y + 1:
-                # Extend current line
-                current_line[3] = y
-                continue
-
-        # Start new line
-        current_line = [x, y, color, y]
-        lines.append(current_line)
-
-    return ";".join([f"{x},{y1}-{y2}:{','.join(map(str, color))}" for x, y1, color, y2 in lines])
-
-
-def changed_pixels(old_frame, new_frame):
-    changed = {}
-
-    for x in range(len(new_frame)):
-        for y in range(len(new_frame[x])):
-            if old_frame is None or not np.array_equal(new_frame[x][y], old_frame[x][y]):
-                key = f"{x},{y}"  # convert (x, y) tuple to a string
-                changed[key] = list(new_frame[x][y])  # convert numpy array to list
-    return changed
+def frame_to_string(frame):
+    """Takes a frame and converts it into a string of UTF-32 characters"""
+    return ''.join([rgb_to_utf32(pixel) for row in frame for pixel in row])
 
 
 # WebSocket connection handler for controller
@@ -147,23 +119,12 @@ async def start_emulation():
         state, _, done, _ = emulator.step(action=current_action)
         state = state.astype('uint8')
 
-        if advanced_display:
-            # Potentially force sending full frame
-            if last_frame is None or time.time() - last_full_frame_time >= 10:
-                last_full_frame_time = time.time()
-                changes = changed_pixels(None, state)  # Send all pixels as changed
-            else:
-                changes = changed_pixels(last_frame, state)
-            last_frame = state
-        else:
-            changes = changed_pixels(None, state)  # Send all pixels as changed
+        #utf32_data = frame_to_string(state)
 
-        logger.info(f"{len(changes)} pixels changed.")
-        png_data = stringify_changed_pixels(changes)
 
         # Log the size of the message in bytes
-        message_size_bytes = len(png_data)
-        logger.info(f"Message size: {message_size_bytes} bytes")
+        # message_size_bytes = len(utf32_data)
+        # logger.info(f"Message size: {message_size_bytes} bytes")
 
         # Render the emulator state in a window
         emulator.render()
@@ -171,16 +132,17 @@ async def start_emulation():
         # Convert state to PNG and send over websocket
         failed_sockets = set()
 
-        if message_size_bytes > 0:
-            for websocket in list(frame_websockets):
-                try:
-                    await websocket.send(png_data)
-                except websockets.exceptions.ConnectionClosedOK:
-                    logger.info("Client disconnected")
-                    failed_sockets.add(websocket)
-                except Exception as e:
-                    logger.error(f"Error: {e}")
-                    failed_sockets.add(websocket)
+        # if message_size_bytes > 0:
+        #     for websocket in list(frame_websockets):
+        #         try:
+        #             await websocket.send(utf32_data)
+        #             pass
+        #         except websockets.exceptions.ConnectionClosedOK:
+        #             logger.info("Client disconnected")
+        #             failed_sockets.add(websocket)
+        #         except Exception as e:
+        #             logger.error(f"Error: {e}")
+        #             failed_sockets.add(websocket)
 
         # Remove failed sockets from active set
         frame_websockets.difference_update(failed_sockets)
@@ -194,7 +156,7 @@ async def start_emulation():
             last_reset_time = time.time()
 
         # Constant delay for each frame
-        await asyncio.sleep(1.0 / 30.0)
+        await asyncio.sleep(1.0 / 120.0)
 
 # Start the event loop
 async def main():
