@@ -60,13 +60,11 @@ class FrameWebsocket(BaseWebsocket):
         return message
 
     def frame_to_string(self, frame):
-        """Takes a frame and converts it into a message of pixel ranges and colors"""
-
         # Make a copy of frame to ensure it's not modified elsewhere
         frame_copy = frame.copy()
 
         last_color = None
-        same_color_start = 0
+        same_color_start = None
         message = ""
         total_pixels = frame.shape[0] * frame.shape[1]
 
@@ -82,17 +80,19 @@ class FrameWebsocket(BaseWebsocket):
 
         # Iterate over pixels that changed
         for i, (pixel, changed) in enumerate(zip(frame_copy, changed_pixels)):
-            if not changed:
-                continue
-
             color = self.rgb_to_utf32(*pixel)
-            if color != last_color:
-                if last_color is not None:
+
+            if changed and color != last_color:
+                if last_color is not None and same_color_start is not None:
                     message += f"{same_color_start}+{i - 1 - same_color_start}_{last_color}"
                 same_color_start = i
                 last_color = color
+            elif not changed and same_color_start is not None:
+                message += f"{same_color_start}+{i - 1 - same_color_start}_{last_color}"
+                same_color_start = None
+                last_color = None
 
-            if i == total_pixels - 1:  # the end of the pixels, add the last color
+            if i == total_pixels - 1 and same_color_start is not None:  # the end of the pixels, add the last color
                 message += f"{same_color_start}+{i - same_color_start}_{last_color}"
 
         # Update the last frame
