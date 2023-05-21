@@ -18,17 +18,20 @@ logger.addHandler(handler)
 HOST = '10.0.0.147'
 PORT = 9001
 
-def parse_changed_pixels(data):
-    pixel_data = data.split(";")
-    changes = {}
-    for p in pixel_data:
-        match = re.match(r'(\d+),(\d+)-(\d+):(\d+),(\d+),(\d+)', p)
-        if match:
-            x = int(match.group(1))
-            y_range = (int(match.group(2)), int(match.group(3)))  # Use tuple instead of list
-            color = [int(match.group(4)), int(match.group(5)), int(match.group(6))]
-            changes[(x, y_range)] = color
-    return changes
+def utf32_to_rgb(utf32_str):
+    """Converts a UTF-32 string to an RGB tuple"""
+    rgb_int = ord(utf32_str)
+    r = (rgb_int>>10 & 0x3F) << 2
+    g = (rgb_int>>5 & 0x3F) << 2
+    b = (rgb_int & 0x3F) << 2
+    return (r, g, b)
+
+def string_to_frame(data):
+    """Converts a string of UTF-32 characters to a frame (2D array of RGB tuples)"""
+    pixels = [utf32_to_rgb(ch) for ch in data]
+    return np.array(pixels).reshape(240, 256, 3)
+
+
 class DisplayStrategy(ABC):
     @abstractmethod
     def display(self, frame):
@@ -64,7 +67,7 @@ class AdvancedDisplayStrategy(DisplayStrategy):
                 if pixel_changed:
                     self.canvas[x][y] = frame[x][y]
                     changed_pixels += 1
-        logger.info(f"Updated {changed_pixels} pixels")
+        #logger.info(f"Updated {changed_pixels} pixels")
         return self.show_frame(self.canvas, 'NES Emulator Frame Viewer (Canvas)')
 
     async def receive_frames(self):
@@ -76,15 +79,13 @@ class AdvancedDisplayStrategy(DisplayStrategy):
                     while True:
                         message = await websocket.recv()
                         message_bytes = len(message.encode('utf-8'))
+                        logger.info(f"Received message with {message_bytes} bytes.")
                         try:
-                            logger.info(f"Received message with {message_bytes} bytes.")
-                            print(message)
-                            changes = parse_changed_pixels(message)
-                            self.update_canvas(changes)
+                            frame = string_to_frame(message)
                         except:
                             logger.error(f"Could not read data as change: {message}", exc_info=True)
                             continue
-                        if not display_strategy.display(display_strategy.canvas):
+                        if not display_strategy.display(frame):
                             break
             except Exception as e:
                 logger.error(f"Error: {e}", exc_info=True)

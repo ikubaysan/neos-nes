@@ -2,8 +2,6 @@ import asyncio
 import logging
 import websockets
 import time
-import imageio
-import cv2
 from operator import itemgetter
 from nes_py import NESEnv
 import numpy as np
@@ -57,14 +55,30 @@ advanced_display = True
 last_frame = None
 last_full_frame_time = time.time()
 
-def rgb_to_utf32(rgb_values):
+def rgb_to_utf32(r, g, b):
     """Takes an RGB tuple and converts it into a single UTF-32 character"""
-    rgb_int = int(''.join([f"{x:08b}" for x in rgb_values]), 2)
+    r >>= 2
+    g >>= 2
+    b >>= 2
+
+    # Without red and blue channels swapped
+    # rgb_int = r<<10 | g<<5 | b
+
+    rgb_int = b << 10 | g << 5 | r  # Swap red and blue channels
+
+    # Adjust if in the Unicode surrogate range
+    if 0xD800 <= rgb_int <= 0xDFFF:
+        logger.info("Avoiding Unicode surrogate range")
+        if rgb_int < 0xDC00:
+            rgb_int = 0xD7FF  # Maximum value just before the surrogate range
+        else:
+            rgb_int = 0xE000  # Minimum value just after the surrogate range
+    #logger.info(f"RGB int: {rgb_int}")
     return chr(rgb_int)
 
 def frame_to_string(frame):
     """Takes a frame and converts it into a string of UTF-32 characters"""
-    return ''.join([rgb_to_utf32(pixel) for row in frame for pixel in row])
+    return ''.join([rgb_to_utf32(*pixel) for row in frame for pixel in row])
 
 
 # WebSocket connection handler for controller
@@ -119,12 +133,11 @@ async def start_emulation():
         state, _, done, _ = emulator.step(action=current_action)
         state = state.astype('uint8')
 
-        #utf32_data = frame_to_string(state)
-
+        utf32_data = frame_to_string(state)
 
         # Log the size of the message in bytes
-        # message_size_bytes = len(utf32_data)
-        # logger.info(f"Message size: {message_size_bytes} bytes")
+        message_size_bytes = len(utf32_data)
+        logger.info(f"Message size: {message_size_bytes} bytes")
 
         # Render the emulator state in a window
         emulator.render()
@@ -132,17 +145,17 @@ async def start_emulation():
         # Convert state to PNG and send over websocket
         failed_sockets = set()
 
-        # if message_size_bytes > 0:
-        #     for websocket in list(frame_websockets):
-        #         try:
-        #             await websocket.send(utf32_data)
-        #             pass
-        #         except websockets.exceptions.ConnectionClosedOK:
-        #             logger.info("Client disconnected")
-        #             failed_sockets.add(websocket)
-        #         except Exception as e:
-        #             logger.error(f"Error: {e}")
-        #             failed_sockets.add(websocket)
+        if message_size_bytes > 0:
+            for websocket in list(frame_websockets):
+                try:
+                    await websocket.send(utf32_data)
+                    pass
+                except websockets.exceptions.ConnectionClosedOK:
+                    logger.info("Client disconnected")
+                    failed_sockets.add(websocket)
+                except Exception as e:
+                    logger.error(f"Error: {e}")
+                    failed_sockets.add(websocket)
 
         # Remove failed sockets from active set
         frame_websockets.difference_update(failed_sockets)
