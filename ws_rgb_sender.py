@@ -55,8 +55,9 @@ async def handle_connection(websocket, path):
         # Convert RGB values to Unicode format
         message = rgb_to_utf32(r, g, b)
 
-        await send_message(websocket, message)
-        logger.info(f"Sent random RGB message: {message} (Bytes: {len(message.encode('utf-8'))})")
+        longer_message = "prefix_" + message + "_suffix"
+        await send_message(websocket, longer_message)
+        logger.info(f"Sent random RGB message: {longer_message} (Bytes: {len(longer_message.encode('utf-8'))})")
 
         # Decode the message back into RGB values and log them
         r_decoded, g_decoded, b_decoded = utf32_to_rgb(message)
