@@ -1,10 +1,9 @@
 import asyncio
 import logging
-import websockets
-import time
-from operator import itemgetter
 from nes_py import NESEnv
-import numpy as np
+from Websockets.ControllerWebsocket import ControllerWebsocket
+from Websockets.FrameWebsocket import FrameWebsocket
+import time
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -21,159 +20,64 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 # Initialize NES emulator and load ROM
-emulator = NESEnv(r"C:\Users\Tay\Desktop\Stuff\Games\emulators\fceux\roms\Super Mario Bros.nes")
 
-# Define button map
-BUTTON_MAP = {
-    'a': 1,
-    'b': 2,
-    'select': 4,
-    'start': 8,
-    'up': 16,
-    'down': 32,
-    'left': 64,
-    'right': 128,
-}
+class NESGameServer:
+    def __init__(self, emulator:NESEnv, host, controller_port, frame_port):
+        # WebSocket server configuration
+        self.host = host
+        self.controller_port = controller_port
+        self.frame_port = frame_port
 
-# Create a shared state for the action
-current_action = 0
+        # Create instances of ControllerWebsocket and FrameWebsocket
+        self.controller = ControllerWebsocket(self.host, self.controller_port)
+        self.frame = FrameWebsocket(self.host, self.frame_port)
 
-# WebSocket server configuration
-#HOST = 'localhost'
-HOST = '10.0.0.147'
-CONTROLLER_PORT = 9000
-FRAME_PORT = 9001
+        self.emulator = emulator
+        self.execution_count = 0
+        self.previous_fps_check_time = time.time()
+    async def main(self):
+        # Start the WebSocket servers and the emulation concurrently
+        await asyncio.gather(self.controller.start(), self.frame.start(), self.start_emulation())
 
-# WebSockets for frame
-frame_websockets = set()
+    async def start_emulation(self):
+        # Reset the emulator
+        state = self.emulator.reset()
 
-execution_count = 0
-last_reset_time = time.time()
+        # Emulation loop and livestreaming
+        done = False
+        while not done:
+            # Process frame
+            state, _, done, _ = emulator.step(action=self.controller.current_action)
+            state = state.astype('uint8')
 
-# Create a shared state for the action...
-advanced_display = True
-last_frame = None
-last_full_frame_time = time.time()
+            utf32_data = self.frame.frame_to_string(state)
 
-def rgb_to_utf32(r, g, b):
-    """Takes an RGB tuple and converts it into a single UTF-32 character"""
-    r >>= 2
-    g >>= 2
-    b >>= 2
+            # Log the size of the message in bytes
+            message_size_bytes = len(utf32_data)
+            logger.info(f"Message size: {message_size_bytes} chars")
 
-    # Without red and blue channels swapped
-    # rgb_int = r<<10 | g<<5 | b
+            # Render the emulator state in a window
+            emulator.render()
 
-    rgb_int = b << 10 | g << 5 | r  # Swap red and blue channels
+            await self.frame.broadcast(utf32_data)
 
-    # Adjust if in the Unicode surrogate range
-    if 0xD800 <= rgb_int <= 0xDFFF:
-        logger.info("Avoiding Unicode surrogate range")
-        if rgb_int < 0xDC00:
-            rgb_int = 0xD7FF  # Maximum value just before the surrogate range
-        else:
-            rgb_int = 0xE000  # Minimum value just after the surrogate range
-    #logger.info(f"RGB int: {rgb_int}")
-    return chr(rgb_int)
+            self.execution_count += 1
 
-def frame_to_string(frame):
-    """Takes a frame and converts it into a string of UTF-32 characters"""
-    return ''.join([rgb_to_utf32(*pixel) for row in frame for pixel in row])
+            # If a second has passed since the last reset, log and reset the execution count
+            if time.time() - self.previous_fps_check_time >= 1.0:
+                logger.info(f"frames per second: {self.execution_count}")
+                self.execution_count = 0
+                self.previous_fps_check_time = time.time()
+
+            # Constant delay for each frame
+            await asyncio.sleep(1.0 / 120.0)
 
 
-# WebSocket connection handler for controller
-async def handle_controller_connection(websocket, path):
-    global current_action
-    logger.info("Controller WebSocket connection established")
-    # Read and process inputs from WebSocket
-    async for message in websocket:
-        # Map message to action and update current_action
-        logger.info(f"Received message: {message}")
-        if message == "release":
-            current_action = 0
-        else:
-            current_action = BUTTON_MAP.get(message, current_action)
+if __name__ == "__main__":
+    HOST = '10.0.0.147'
+    CONTROLLER_PORT = 9000
+    FRAME_PORT = 9001
 
-# WebSocket connection handler for frame
-async def handle_frame_connection(websocket, path):
-    frame_websockets.add(websocket)
-    logger.info("Frame WebSocket connection established")
-    try:
-        while True:
-            # Wait for a message, but do nothing with it.
-            # This keeps the connection open
-            _ = await websocket.recv()
-    except websockets.exceptions.ConnectionClosed:
-        logger.info("Frame WebSocket connection closed")
-    finally:
-        frame_websockets.remove(websocket)
-
-# Start the WebSocket server for controller
-async def start_controller_websocket_server():
-    server = await websockets.serve(handle_controller_connection, HOST, CONTROLLER_PORT)
-    logger.info(f"Controller WebSocket server started at ws://{HOST}:{CONTROLLER_PORT}")
-    await server.wait_closed()
-
-# Start the WebSocket server for frame
-async def start_frame_websocket_server():
-    server = await websockets.serve(handle_frame_connection, HOST, FRAME_PORT)
-    logger.info(f"Frame WebSocket server started at ws://{HOST}:{FRAME_PORT}")
-    await server.wait_closed()
-
-async def start_emulation():
-    global execution_count, last_reset_time, last_frame, last_full_frame_time
-    # Reset the emulator
-    state = emulator.reset()
-
-    # Emulation loop and livestreaming
-    done = False
-    while not done:
-        # Process frame
-        global current_action
-        state, _, done, _ = emulator.step(action=current_action)
-        state = state.astype('uint8')
-
-        utf32_data = frame_to_string(state)
-
-        # Log the size of the message in bytes
-        message_size_bytes = len(utf32_data)
-        logger.info(f"Message size: {message_size_bytes} chars")
-
-        # Render the emulator state in a window
-        emulator.render()
-
-        # Convert state to PNG and send over websocket
-        failed_sockets = set()
-
-        if message_size_bytes > 0:
-            for websocket in list(frame_websockets):
-                try:
-                    await websocket.send(utf32_data)
-                    pass
-                except websockets.exceptions.ConnectionClosedOK:
-                    logger.info("Client disconnected")
-                    failed_sockets.add(websocket)
-                except Exception as e:
-                    logger.error(f"Error: {e}")
-                    failed_sockets.add(websocket)
-
-        # Remove failed sockets from active set
-        frame_websockets.difference_update(failed_sockets)
-        # Increment execution count
-        execution_count += 1
-
-        # If a second has passed since the last reset, log and reset the execution count
-        if time.time() - last_reset_time >= 1.0:
-            logger.info(f"frames per second: {execution_count}")
-            execution_count = 0
-            last_reset_time = time.time()
-
-        # Constant delay for each frame
-        await asyncio.sleep(1.0 / 120.0)
-
-# Start the event loop
-async def main():
-    # Start the WebSocket servers and the emulation concurrently
-    await asyncio.gather(start_controller_websocket_server(), start_frame_websocket_server(), start_emulation())
-
-asyncio.run(main())
+    emulator = NESEnv(r"./roms/Super Mario Bros.nes")
+    server = NESGameServer(emulator, HOST, CONTROLLER_PORT, FRAME_PORT)
+    asyncio.run(server.main())
