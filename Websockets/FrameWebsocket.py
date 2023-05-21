@@ -1,6 +1,42 @@
 from Websockets.BaseWebsocket import *
+import ctypes
+import numpy as np
+import os
+from numpy.ctypeslib import ndpointer
+
+os.add_dll_directory(r"C:/Users/Tay/Desktop/Stuff/Coding/Repos/my_bitbucket/neos-nes/Websockets/")
 
 logger = logging.getLogger(__name__)
+
+#lib = ctypes.CDLL('frame_to_string_common.so')
+#lib = ctypes.cdll.LoadLibrary(r"C:/Users/Tay/Desktop/Stuff/Coding/Repos/my_bitbucket/neos-nes/Websockets/frame_to_string_common.so")
+
+
+#lib = ctypes.CDLL("frame_to_string_common.so", winmode=0)
+lib = ctypes.CDLL("C:/Users/Tay/Desktop/Stuff/Coding/Repos/my_bitbucket/neos-nes/Websockets/frame_to_string_common.so", winmode=1)
+
+# Define the data types of the function's arguments
+lib.frame_to_string_common.argtypes = [ndpointer(ctypes.c_uint8, flags="C_CONTIGUOUS"),
+                                       ctypes.c_int,
+                                       ndpointer(ctypes.c_bool, flags="C_CONTIGUOUS"),
+                                       ctypes.c_int]
+
+# Define the return type of the function
+lib.frame_to_string_common.restype = ctypes.c_char_p
+
+def frame_to_string_common(frame, changed_pixels):
+    # Ensure numpy arrays are C-contiguous
+    frame = np.ascontiguousarray(frame, dtype=np.uint8)
+    changed_pixels = np.ascontiguousarray(changed_pixels, dtype=np.bool)
+
+    # Convert frame and changed_pixels to 1D arrays before passing to C function
+    frame = frame.reshape(-1, 3)
+    changed_pixels = changed_pixels.reshape(-1)
+
+    # Call the C++ function and decode the result
+    result = lib.frame_to_string_common(frame, len(frame), changed_pixels, len(changed_pixels))
+    return result.decode()
+
 
 class FrameWebsocket(BaseWebsocket):
 
@@ -9,59 +45,8 @@ class FrameWebsocket(BaseWebsocket):
         self.frame_websockets = set()
         self.last_frame = None
 
-    @staticmethod
-    def _frame_to_string_common(frame, changed_pixels=None) -> str:
-        last_color = None
-        same_color_start = None
-        message = ""
-        total_pixels = frame.shape[0] * frame.shape[1]
-
-        # Flatten the frame for simpler iteration
-        frame_copy = frame.reshape(-1, 3)
-
-        # If changed_pixels is None, consider all pixels as changed
-        if changed_pixels is None:
-            changed_pixels = [True] * total_pixels
-        else:
-            changed_pixels = changed_pixels.reshape(-1)
-
-        # Iterate over pixels that changed
-        for i, (pixel, changed) in enumerate(zip(frame_copy, changed_pixels)):
-            """Take an RGB tuple and convert it into a single UTF-32 character"""
-            r, g, b = pixel
-            r >>= 2
-            g >>= 2
-            b >>= 2
-
-            rgb_int = b << 10 | g << 5 | r  # Swap red and blue channels
-
-            # Adjust if in the Unicode surrogate range
-            if 0xD800 <= rgb_int <= 0xDFFF:
-                logger.info("Avoiding Unicode surrogate range")
-                if rgb_int < 0xDC00:
-                    rgb_int = 0xD7FF  # Maximum value just before the surrogate range
-                else:
-                    rgb_int = 0xE000  # Minimum value just after the surrogate range
-
-            color = chr(rgb_int)
-
-            if changed and color != last_color:
-                if last_color is not None and same_color_start is not None:
-                    message += f"{same_color_start}+{i - 1 - same_color_start}_{last_color}"
-                same_color_start = i
-                last_color = color
-            elif not changed and same_color_start is not None:
-                message += f"{same_color_start}+{i - 1 - same_color_start}_{last_color}"
-                same_color_start = None
-                last_color = None
-
-            if i == total_pixels - 1 and same_color_start is not None:  # the end of the pixels, add the last color
-                message += f"{same_color_start}+{i - same_color_start}_{last_color}"
-
-        return message
-
     def full_frame_to_string(self, frame):
-        return self._frame_to_string_common(frame)
+        return frame_to_string_common(frame, changed_pixels=None)
 
     def frame_to_string(self, frame):
         # Compare frame to the last frame and find changed pixels
@@ -70,7 +55,7 @@ class FrameWebsocket(BaseWebsocket):
         else:
             changed_pixels = np.ones((frame.shape[0], frame.shape[1]), dtype=bool)
 
-        message = self._frame_to_string_common(frame, changed_pixels)
+        message = frame_to_string_common(frame, changed_pixels)
         self.last_frame = frame
         return message
 
