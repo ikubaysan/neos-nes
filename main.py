@@ -55,53 +55,30 @@ advanced_display = True
 last_frame = None
 last_full_frame_time = time.time()
 
-def rgb_to_index(r, g, b):
-    """Takes an RGB tuple and converts it into a single integer"""
+def rgb_to_utf32(r, g, b):
+    """Takes an RGB tuple and converts it into a single UTF-32 character"""
     r >>= 2
     g >>= 2
     b >>= 2
-    return b << 10 | g << 5 | r  # Swap red and blue channels
 
-def index_to_rgb(index):
-    """Takes an integer and converts it back into an RGB tuple"""
-    r = (index>>10 & 0x3F) << 2
-    g = (index>>5 & 0x3F) << 2
-    b = (index & 0x3F) << 2
-    return (r, g, b)
+    # Without red and blue channels swapped
+    # rgb_int = r<<10 | g<<5 | b
 
-def frame_to_message(frame):
+    rgb_int = b << 10 | g << 5 | r  # Swap red and blue channels
+
+    # Adjust if in the Unicode surrogate range
+    if 0xD800 <= rgb_int <= 0xDFFF:
+        logger.info("Avoiding Unicode surrogate range")
+        if rgb_int < 0xDC00:
+            rgb_int = 0xD7FF  # Maximum value just before the surrogate range
+        else:
+            rgb_int = 0xE000  # Minimum value just after the surrogate range
+    #logger.info(f"RGB int: {rgb_int}")
+    return chr(rgb_int)
+
+def frame_to_string(frame):
     """Takes a frame and converts it into a string of UTF-32 characters"""
-    color_to_pixels = dict()
-    for i, row in enumerate(frame):
-        for j, pixel in enumerate(row):
-            color_index = rgb_to_index(*pixel)
-            if color_index not in color_to_pixels:
-                color_to_pixels[color_index] = []
-            color_to_pixels[color_index].append((i, j))
-
-    message = ''
-    for color_index, pixels in color_to_pixels.items():
-        message += chr(color_index)
-        for i, j in pixels:
-            # 15 bits for i and 15 bits for j
-            message += chr((i << 15) | j)
-    return message
-
-def message_to_frame(message):
-    """Takes a message and converts it back into a frame"""
-    frame = np.zeros((240, 256, 3), dtype=np.uint8)  # Initialize an empty frame
-    i = 0
-    while i < len(message):
-        color_index = ord(message[i])
-        color = index_to_rgb(color_index)
-        i += 1
-        while i < len(message) and ord(message[i]) < 0x10000:
-            pixel_index = ord(message[i])
-            x = pixel_index >> 15
-            y = pixel_index & 0x7FFF
-            frame[x][y] = color
-            i += 1
-    return frame
+    return ''.join([rgb_to_utf32(*pixel) for row in frame for pixel in row])
 
 
 # WebSocket connection handler for controller
@@ -156,11 +133,11 @@ async def start_emulation():
         state, _, done, _ = emulator.step(action=current_action)
         state = state.astype('uint8')
 
-        utf32_data = frame_to_message(frame=state)
+        utf32_data = frame_to_string(state)
 
         # Log the size of the message in bytes
         message_size_bytes = len(utf32_data)
-        logger.info(f"Message size: {message_size_bytes} bytes")
+        logger.info(f"Message size: {message_size_bytes} chars")
 
         # Render the emulator state in a window
         emulator.render()

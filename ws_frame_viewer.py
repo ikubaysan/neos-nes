@@ -18,14 +18,12 @@ logger.addHandler(handler)
 HOST = '10.0.0.147'
 PORT = 9001
 
-COLOR_MAP = [chr(i) for i in range(0x10000, 0x10000 + 64)]
-
 def utf32_to_rgb(utf32_str):
     """Converts a UTF-32 string to an RGB tuple"""
-    color_index = COLOR_MAP.index(utf32_str)
-    r = (color_index >> 4) << 2
-    g = ((color_index >> 2) & 0x3) << 2
-    b = (color_index & 0x3) << 2
+    rgb_int = ord(utf32_str)
+    r = (rgb_int>>10 & 0x3F) << 2
+    g = (rgb_int>>5 & 0x3F) << 2
+    b = (rgb_int & 0x3F) << 2
     return (r, g, b)
 
 def string_to_frame(data):
@@ -81,7 +79,7 @@ class AdvancedDisplayStrategy(DisplayStrategy):
                     while True:
                         message = await websocket.recv()
                         message_bytes = len(message.encode('utf-8'))
-                        logger.info(f"Received message with {message_bytes} bytes.")
+                        logger.info(f"Received message with {message_bytes} bytes, {len(message)} chars.")
                         try:
                             frame = string_to_frame(message)
                         except:
