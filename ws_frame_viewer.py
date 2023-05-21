@@ -49,14 +49,14 @@ class AdvancedDisplayStrategy(DisplayStrategy):
         self.canvas = np.zeros((240, 256, 3), dtype=np.uint8)  # Initialize an empty canvas
 
     def update_canvas(self, message):
-        pixel_ranges = re.findall(r'\d+-\d+_.', message)
+        pixel_ranges = re.findall(r'\d+\+\d+_.', message)
         for pixel_range in pixel_ranges:
             range_str = pixel_range[:-2]
             color_str = pixel_range[-1]
 
-            start, end = map(int, range_str.split("-"))
+            start, range_length = map(int, range_str.split("+"))
             color = utf32_to_rgb(color_str)
-            for i in range(start, end + 1):
+            for i in range(start, start + range_length + 1):
                 x, y = i // 256, i % 256  # Convert 1D position back to 2D
                 self.canvas[x][y] = color
 

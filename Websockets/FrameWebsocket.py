@@ -42,12 +42,12 @@ class FrameWebsocket(BaseWebsocket):
             color = self.rgb_to_utf32(*pixel)
             if color != last_color:
                 if last_color is not None:
-                    message += f"{same_color_start}-{i-1}_{last_color}"
+                    message += f"{same_color_start}+{i - 1 - same_color_start}_{last_color}"
                 same_color_start = i
                 last_color = color
 
             if i == total_pixels - 1:  # the end of the pixels, add the last color
-                message += f"{same_color_start}-{i}_{last_color}"
+                message += f"{same_color_start}+{i - same_color_start}_{last_color}"
 
         return message
 
