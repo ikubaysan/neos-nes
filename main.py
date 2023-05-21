@@ -3,6 +3,7 @@ import logging
 from nes_py import NESEnv
 from Websockets.ControllerWebsocket import ControllerWebsocket
 from Websockets.FrameWebsocket import FrameWebsocket
+from Helpers.GeneralHelpers import *
 import time
 
 # Configure logging
@@ -18,6 +19,9 @@ handler.setFormatter(formatter)
 
 # Add the handler to the logger
 logger.addHandler(handler)
+
+speed_profiler = SpeedProfiler()
+speed_profiler.start()
 
 # Initialize NES emulator and load ROM
 
@@ -76,6 +80,8 @@ class NESGameServer:
                 logger.info(f"frames per second: {self.execution_count}")
                 self.execution_count = 0
                 self.previous_fps_check_time = time.time()
+                # speed_profiler.stop()
+                # speed_profiler.start()
 
             # Constant delay for each frame
             await asyncio.sleep(1.0 / 120.0)
