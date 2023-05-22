@@ -1,4 +1,5 @@
 #include <string>
+#include <cstring>
 #include <sstream>
 #include <iostream>
 
@@ -14,7 +15,27 @@ extern "C" {
         bool* data;
     } BoolArray;
 
-    const char* frame_to_string(Array3D* array, BoolArray* changed_pixels) {
+    std::string encode_utf8(int unicode) {
+    std::string result;
+    if (unicode < 0x80) {
+        result.push_back(unicode);
+    } else if (unicode < 0x800) {
+        result.push_back(0xC0 | (unicode >> 6));
+        result.push_back(0x80 | (unicode & 0x3F));
+    } else if (unicode < 0x10000) {
+        result.push_back(0xE0 | (unicode >> 12));
+        result.push_back(0x80 | ((unicode >> 6) & 0x3F));
+        result.push_back(0x80 | (unicode & 0x3F));
+    } else {
+        result.push_back(0xF0 | (unicode >> 18));
+        result.push_back(0x80 | ((unicode >> 12) & 0x3F));
+        result.push_back(0x80 | ((unicode >> 6) & 0x3F));
+        result.push_back(0x80 | (unicode & 0x3F));
+    }
+    return result;
+}
+
+    void frame_to_string(Array3D* array, BoolArray* changed_pixels, char* output) {
         std::stringstream ss;
         std::string last_color = "";
         int same_color_start = 0;
@@ -37,7 +58,8 @@ extern "C" {
                     rgb_int = 0xE000;  // Minimum value just after the surrogate range
             }
 
-            std::string color(1, rgb_int);
+            //std::string color(1, rgb_int);
+            std::string color = encode_utf8(rgb_int);
 
             // Check if pixel has changed
             if (changed_pixels == nullptr)
@@ -62,8 +84,9 @@ extern "C" {
             }
         }
 
-        static std::string s = ss.str();
+        std::string s = ss.str();
         std::cout << s << std::endl;
-        return s.c_str();
+        std::strncpy(output, s.c_str(), s.size());
+        output[s.size()] = '\0';  // Null-terminate the output string
     }
 }
