@@ -1,7 +1,9 @@
 import numpy as np
 import os
 import ctypes
+import logging
 
+logger = logging.getLogger(__name__)
 
 class Array3D(ctypes.Structure):
     _fields_ = [
@@ -26,10 +28,11 @@ class FrameToString:
         python_file_directory = os.path.dirname(python_file_path)
 
         # Construct the shared library path
-        shared_library_path = os.path.join(python_file_directory, 'neos-nes-cpp-lib.so')
+        shared_library_path = os.path.abspath(os.path.join(python_file_directory, 'neos-nes-cpp-lib.so'))
+        print(f"Using shared_library_path {shared_library_path}")
 
         # Load the shared library
-        self.mylib = ctypes.CDLL(os.path.abspath(shared_library_path), winmode=0)
+        self.mylib = ctypes.CDLL((shared_library_path), winmode=0)
 
         self.frame_to_string = self.mylib.frame_to_string
         self.frame_to_string.argtypes = [ctypes.POINTER(Array3D), ctypes.POINTER(BoolArray), ctypes.c_char_p]
@@ -57,7 +60,6 @@ if __name__ == "__main__":
     frame_to_string = FrameToString()
     state = np.random.randint(0, 256, (240, 256, 3), dtype=np.uint8)
     changed_pixels = [True] * (state.shape[0] * state.shape[1])
-    output = ctypes.create_string_buffer(61440 * 9 * 4)
 
     result = frame_to_string.get_string(state, changed_pixels)
     print(result)
