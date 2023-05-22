@@ -17,7 +17,14 @@ extern "C" {
 
     std::string encode_utf8(int unicode) {
         std::string result;
-        if (unicode < 0x80) {
+
+        if (unicode == 0) {
+            // Replace null terminate symbol with a different unicode character
+            // TODO: I might want to change this to something else. For now this is fine.
+            // I definitely need this, otherwise my strings will be cut off.
+            result.push_back(0x1);
+        }
+        else if (unicode < 0x80) {
             result.push_back(unicode);
         } else if (unicode < 0x800) {
             result.push_back(0xC0 | (unicode >> 6));
@@ -113,15 +120,15 @@ extern "C" {
     size_t max_bytes = sizeof(output);
     size_t max_chars = max_bytes / sizeof(char) - 1;  // Exclude the null-terminator
 
-    // Print the number of changes, total pixels, range count, maximum bytes, and maximum characters
-    std::cout << "Passed-in Changes: " << passed_in_change_count << std::endl;
-    std::cout << "Found Changes: " << change_count << std::endl;
-    std::cout << "Total Pixels: " << total_pixels << std::endl;
-    std::cout << "Range Count: " << range_count << std::endl;
-    std::cout << "Maximum Bytes: " << max_bytes << std::endl;
-    std::cout << "Maximum Characters: " << max_chars << std::endl;
-    std::cout << "ss: " << ss.str() << std::endl;
-    std::cout << "Output: " << output << std::endl;
-    std::cout << "Done!" << std::endl;
+    // // Print the number of changes, total pixels, range count, maximum bytes, and maximum characters
+    // std::cout << "Passed-in Changes: " << passed_in_change_count << std::endl;
+    // std::cout << "Found Changes: " << change_count << std::endl;
+    // std::cout << "Total Pixels: " << total_pixels << std::endl;
+    // std::cout << "Range Count: " << range_count << std::endl;
+    // std::cout << "Maximum Bytes: " << max_bytes << std::endl;
+    // std::cout << "Maximum Characters: " << max_chars << std::endl;
+    // std::cout << "ss: " << ss.str() << std::endl;
+    // std::cout << "Output: " << output << std::endl;
+    // std::cout << "Done!" << std::endl;
     }
 }
