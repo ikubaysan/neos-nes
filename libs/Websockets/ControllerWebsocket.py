@@ -1,4 +1,4 @@
-from BaseWebsocket import *
+from libs.Websockets.BaseWebsocket import *
 
 logger = logging.getLogger(__name__)
 

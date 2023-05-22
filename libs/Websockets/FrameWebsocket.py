@@ -1,4 +1,5 @@
-from BaseWebsocket import *
+from libs.Websockets.BaseWebsocket import *
+from libs.CtypesLibs.cpp_frame_to_string import cpp_frame_to_string
 
 logger = logging.getLogger(__name__)
 
@@ -11,6 +12,17 @@ class FrameWebsocket(BaseWebsocket):
 
     @staticmethod
     def _frame_to_string_common(frame, changed_pixels=None) -> str:
+        total_pixels = frame.shape[0] * frame.shape[1]
+        # If changed_pixels is None, consider all pixels as changed
+        if changed_pixels is None:
+            changed_pixels = [True] * total_pixels
+            print("All pixels changed")
+        else:
+            changed_pixels = changed_pixels.reshape(-1)
+        return cpp_frame_to_string(frame, changed_pixels)
+
+    @staticmethod
+    def _frame_to_string_common_old(frame, changed_pixels=None) -> str:
         last_color = None
         same_color_start = None
         message = ""
@@ -60,8 +72,10 @@ class FrameWebsocket(BaseWebsocket):
 
         return message
 
+
     def full_frame_to_string(self, frame):
-        return self._frame_to_string_common(frame)
+        full_frame_string = self._frame_to_string_common(frame)
+        return full_frame_string
 
     def frame_to_string(self, frame):
         # Compare frame to the last frame and find changed pixels
