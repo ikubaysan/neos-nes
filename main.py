@@ -41,7 +41,7 @@ class NESGameServer:
         self.previous_fps_check_time = time.time()
 
         self.last_full_frame_time = time.time()
-        self.full_frame_interval = 10.0  # 3 seconds
+        self.full_frame_interval = 5.0  # 5 seconds
 
     async def main(self):
         # Start the WebSocket servers and the emulation concurrently
