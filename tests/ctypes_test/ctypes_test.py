@@ -15,7 +15,7 @@ class BoolArray(ctypes.Structure):
 
 def create_and_process_array():
     # Load the shared library
-    mylib = ctypes.CDLL('./mylib.so', winmode=0)
+    mylib = ctypes.CDLL('./neos-nes-cpp-lib.so', winmode=0)
 
     frame_to_string = mylib.frame_to_string
     frame_to_string.argtypes = [ctypes.POINTER(Array3D), ctypes.POINTER(BoolArray), ctypes.c_char_p]
@@ -38,13 +38,10 @@ def create_and_process_array():
     frame_to_string(ctypes.byref(array), ctypes.byref(changed_pixels), output)
 
     # Convert the returned value to a Python string
-    print("output.value:")
-    #print(output.value)
-    #print("output.raw:")
-    #print(output.raw)
     string_result = output.value.decode()
 
     # Print the string
+    print("Output:")
     print(string_result)
 
 if __name__ == "__main__":
