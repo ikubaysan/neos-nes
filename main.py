@@ -80,8 +80,8 @@ class NESGameServer:
                 logger.info(f"frames per second: {self.execution_count}")
                 self.execution_count = 0
                 self.previous_fps_check_time = time.time()
-                # speed_profiler.stop()
-                # speed_profiler.start()
+                speed_profiler.stop()
+                speed_profiler.start()
 
             # Constant delay for each frame
             await asyncio.sleep(1.0 / 120.0)

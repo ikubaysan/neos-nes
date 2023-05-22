@@ -43,7 +43,6 @@ class FrameToString:
         array = Array3D((state.shape[0], state.shape[1], state.shape[2]), state.ctypes.data_as(ctypes.POINTER(ctypes.c_ubyte)))
 
         # Create an empty char array for the output - 61440 pixels * (9 characters for length of rule) * (up to 4 bytes per character)
-        #output = ctypes.create_string_buffer(61440 * 9 * 4 * 2)
         output = ctypes.create_string_buffer(61440 * 9 * 4 * 2)
 
         # Call the C++ frame_to_string function
@@ -63,4 +62,4 @@ if __name__ == "__main__":
     changed_pixels = [True] * (state.shape[0] * state.shape[1])
 
     result = frame_to_string.get_string(state, changed_pixels)
-    #print(result)
+    print(result)
