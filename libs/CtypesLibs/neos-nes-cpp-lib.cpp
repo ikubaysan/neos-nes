@@ -81,7 +81,7 @@ extern "C" {
             if (!last_color.empty() && same_color_start != -1) {
                 ss << same_color_start << "+" << i - 1 - same_color_start << "_" << last_color;
                 range_count++;
-                std::cout << "Found Range: " << same_color_start << "+" << i - 1 - same_color_start << "_" << last_color << std::endl;
+                //std::cout << "Found Range: " << same_color_start << "+" << i - 1 - same_color_start << "_" << last_color << std::endl;
             }
             same_color_start = i;
             last_color = color;
@@ -89,7 +89,7 @@ extern "C" {
         } else if (!changed && same_color_start != -1) {
             ss << same_color_start << "+" << i - 1 - same_color_start << "_" << last_color;
             range_count++;
-            std::cout << "Found Range: " << same_color_start << "+" << i - 1 - same_color_start << "_" << last_color << std::endl;
+            //std::cout << "Found Range: " << same_color_start << "+" << i - 1 - same_color_start << "_" << last_color << std::endl;
             same_color_start = -1;
             last_color = "";
         }
@@ -99,7 +99,7 @@ extern "C" {
     if (same_color_start != -1) {
         ss << same_color_start << "+" << total_pixels - 1 - same_color_start << "_" << last_color;
         range_count++;
-        std::cout << "Found Range: " << same_color_start << "+" << total_pixels - 1 - same_color_start << "_" << last_color << std::endl;
+        //std::cout << "Found Range: " << same_color_start << "+" << total_pixels - 1 - same_color_start << "_" << last_color << std::endl;
     }
 
     // Convert the stringstream to a string
@@ -109,10 +109,19 @@ extern "C" {
     std::strncpy(output, s.c_str(), s.size());
     output[s.size()] = '\0';
 
-        // Print the number of changes, total pixels, and range count
-        std::cout << "Passed-in Changes: " << passed_in_change_count << std::endl;
-        std::cout << "Found Changes: " << change_count << std::endl;
-        std::cout << "Total Pixels: " << total_pixels << std::endl;
-        std::cout << "Range Count: " << range_count << std::endl;
+    // Get the maximum number of bytes and characters for the output buffer
+    size_t max_bytes = sizeof(output);
+    size_t max_chars = max_bytes / sizeof(char) - 1;  // Exclude the null-terminator
+
+    // Print the number of changes, total pixels, range count, maximum bytes, and maximum characters
+    std::cout << "Passed-in Changes: " << passed_in_change_count << std::endl;
+    std::cout << "Found Changes: " << change_count << std::endl;
+    std::cout << "Total Pixels: " << total_pixels << std::endl;
+    std::cout << "Range Count: " << range_count << std::endl;
+    std::cout << "Maximum Bytes: " << max_bytes << std::endl;
+    std::cout << "Maximum Characters: " << max_chars << std::endl;
+    std::cout << "ss: " << ss.str() << std::endl;
+    std::cout << "Output: " << output << std::endl;
+    std::cout << "Done!" << std::endl;
     }
 }
