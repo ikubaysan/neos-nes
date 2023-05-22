@@ -1,5 +1,4 @@
 nes-py
-av
 pyrtmp
 websockets
 imageio

@@ -1,8 +1,8 @@
 import asyncio
 import logging
 from nes_py import NESEnv
-from Websockets.ControllerWebsocket import ControllerWebsocket
-from Websockets.FrameWebsocket import FrameWebsocket
+from libs.Websockets.ControllerWebsocket import ControllerWebsocket
+from libs.Websockets.FrameWebsocket import FrameWebsocket
 from Helpers.GeneralHelpers import *
 import time
 
