@@ -11,81 +11,17 @@ class FrameWebsocket(BaseWebsocket):
         self.last_frame = None
         self.cpp_frame_to_string = FrameToString()
 
-    def _frame_to_string_common(self, frame, changed_pixels=None) -> str:
-        total_pixels = frame.shape[0] * frame.shape[1]
-        # If changed_pixels is None, consider all pixels as changed
-        if changed_pixels is None:
-            changed_pixels = [True] * total_pixels
-            print("All pixels changed")
-        else:
-            changed_pixels = changed_pixels.reshape(-1)
-        return self.cpp_frame_to_string.get_string(frame, changed_pixels)
-
-    @staticmethod
-    def _frame_to_string_common_old(frame, changed_pixels=None) -> str:
-        last_color = None
-        same_color_start = None
-        message = ""
-        total_pixels = frame.shape[0] * frame.shape[1]
-
-        # Flatten the frame for simpler iteration
-        frame_copy = frame.reshape(-1, 3)
-
-        # If changed_pixels is None, consider all pixels as changed
-        if changed_pixels is None:
-            changed_pixels = [True] * total_pixels
-        else:
-            changed_pixels = changed_pixels.reshape(-1)
-
-        # Iterate over pixels that changed
-        for i, (pixel, changed) in enumerate(zip(frame_copy, changed_pixels)):
-            """Take an RGB tuple and convert it into a single UTF-32 character"""
-            r, g, b = pixel
-            r >>= 2
-            g >>= 2
-            b >>= 2
-
-            rgb_int = b << 10 | g << 5 | r  # Swap red and blue channels
-
-            # Adjust if in the Unicode surrogate range
-            if 0xD800 <= rgb_int <= 0xDFFF:
-                logger.info("Avoiding Unicode surrogate range")
-                if rgb_int < 0xDC00:
-                    rgb_int = 0xD7FF  # Maximum value just before the surrogate range
-                else:
-                    rgb_int = 0xE000  # Minimum value just after the surrogate range
-
-            color = chr(rgb_int)
-
-            if changed and color != last_color:
-                if last_color is not None and same_color_start is not None:
-                    message += f"{same_color_start}+{i - 1 - same_color_start}_{last_color}"
-                same_color_start = i
-                last_color = color
-            elif not changed and same_color_start is not None:
-                message += f"{same_color_start}+{i - 1 - same_color_start}_{last_color}"
-                same_color_start = None
-                last_color = None
-
-            if i == total_pixels - 1 and same_color_start is not None:  # the end of the pixels, add the last color
-                message += f"{same_color_start}+{i - same_color_start}_{last_color}"
-
+    def _frame_to_string_common(self, current_frame, last_frame) -> str:
+        message = self.cpp_frame_to_string.get_string(current_frame, last_frame)
+        self.last_frame = current_frame
         return message
 
-
-    def full_frame_to_string(self, frame):
-        full_frame_string = self._frame_to_string_common(frame)
+    def full_frame_to_string(self, current_frame):
+        full_frame_string = self._frame_to_string_common(current_frame, last_frame=None)
         return full_frame_string
 
-    def frame_to_string(self, frame):
-        # Compare frame to the last frame and find changed pixels
-        if self.last_frame is not None:
-            changed_pixels = np.any(frame != self.last_frame, axis=-1)
-        else:
-            changed_pixels = np.ones((frame.shape[0], frame.shape[1]), dtype=bool)
-
-        message = self._frame_to_string_common(frame, changed_pixels)
-        self.last_frame = frame
+    def frame_to_string(self, current_frame):
+        message = self._frame_to_string_common(current_frame, last_frame=self.last_frame)
         return message
 
     async def broadcast(self, message):
