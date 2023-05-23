@@ -29,8 +29,8 @@ speed_profiler.start()
 class NESGameServer:
     # 60.0 runs fine, but is delayed for the viewer when there is substantial movement.
     # Now I may need to look into reducing ws message sizes.
-    #MAX_FRAMERATE = 60.0
-    MAX_FRAMERATE = 30.0
+    MAX_FRAMERATE = 60.0
+    #MAX_FRAMERATE = 35.0
     def __init__(self, emulator:NESEnv, host, controller_port, frame_port):
         # WebSocket server configuration
         self.host = host

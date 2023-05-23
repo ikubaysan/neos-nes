@@ -3,7 +3,6 @@ import websockets
 import cv2
 import numpy as np
 import logging
-import re
 from abc import ABC, abstractmethod
 
 # Configure logging
@@ -26,12 +25,6 @@ def utf32_to_rgb(utf32_str):
     b = (rgb_int & 0x3F) << 2
     return (r, g, b)
 
-def string_to_frame(data):
-    """Converts a string of UTF-32 characters to a frame (2D array of RGB tuples)"""
-    pixels = [utf32_to_rgb(ch) for ch in data]
-    return np.array(pixels).reshape(240, 256, 3)
-
-
 class DisplayStrategy(ABC):
     @abstractmethod
     def display(self, frame):
@@ -49,15 +42,13 @@ class AdvancedDisplayStrategy(DisplayStrategy):
         self.canvas = np.zeros((240, 256, 3), dtype=np.uint8)  # Initialize an empty canvas
 
     def update_canvas(self, message):
-        pixel_ranges = re.findall(r'\d+\+\d+_.', message)
-        for pixel_range in pixel_ranges:
-            range_str = pixel_range[:-2]
-            color_str = pixel_range[-1]
+        for i in range(0, len(message), 3):
+            start = ord(message[i]) - 0x80
+            range_length = ord(message[i + 1]) - 0x80
+            color = utf32_to_rgb(message[i + 2])
 
-            start, range_length = map(int, range_str.split("+"))
-            color = utf32_to_rgb(color_str)
-            for i in range(start, start + range_length + 1):
-                x, y = i // 256, i % 256  # Convert 1D position back to 2D
+            for j in range(start, start + range_length + 1):
+                x, y = j // 256, j % 256  # Convert 1D position back to 2D
                 self.canvas[x][y] = color
 
     def display(self, frame):
@@ -82,7 +73,6 @@ class AdvancedDisplayStrategy(DisplayStrategy):
                 logger.error(f"Error: {e}", exc_info=True)
                 logger.info("Trying to reconnect in 3 seconds...")
                 await asyncio.sleep(3)
-
 
 if __name__ == "__main__":
     display_strategy = AdvancedDisplayStrategy()

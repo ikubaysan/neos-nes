@@ -3,6 +3,7 @@
         "xstring": "cpp",
         "chrono": "cpp",
         "codecvt": "cpp",
-        "xlocale": "cpp"
+        "xlocale": "cpp",
+        "xhash": "cpp"
     }
 }

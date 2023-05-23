@@ -95,20 +95,20 @@ extern "C" {
 
                 if (color != last_color) {
                     if (!last_color.empty() && same_color_start != -1) {
-                        ss << same_color_start << "+" << i - 1 - same_color_start << "_" << last_color;
+                        ss << encode_utf8(same_color_start + 0x80) << encode_utf8(i - 1 - same_color_start + 0x80) << last_color;
                     }
                     same_color_start = i;
                     last_color = color;
                 }
             } else if (same_color_start != -1 && !changed) {
-                ss << same_color_start << "+" << i - 1 - same_color_start << "_" << last_color;
+                ss << encode_utf8(same_color_start + 0x80) << encode_utf8(i - 1 - same_color_start + 0x80) << last_color;
                 same_color_start = -1;
                 last_color = "";
             }
         }
 
         if (same_color_start != -1) {
-            ss << same_color_start << "+" << total_pixels - 1 - same_color_start << "_" << last_color;
+            ss << encode_utf8(same_color_start + 0x80) << encode_utf8(total_pixels - 1 - same_color_start + 0x80) << last_color;
         }
 
         cached_output = ss.str();
