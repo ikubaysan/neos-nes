@@ -3,6 +3,7 @@
 #include <sstream>
 #include <vector>
 #include <iostream>
+#include <algorithm>
 #include <unordered_map>
 
 extern "C" {
@@ -65,55 +66,57 @@ extern "C" {
                 changed_indices.push_back(i);
         }
 
+        // std::cout << "(C++) changed_indices.size() = " << changed_indices.size() << std::endl;
+        // // Create a string representation of the changed pixel indices
+        // std::string indices_str;
+        // for (int i = 0; i < changed_indices.size(); ++i) {
+        //     indices_str += "(" + std::to_string(changed_indices[i]) + ")";
+        //     if (i < changed_indices.size() - 1)
+        //         indices_str += ", ";
+        // }
+
+        // // Print the indices of the changed pixels as a single string
+        // std::cout << "(C++) Indices of changed pixels: " << indices_str << std::endl;
+
+
         int i = 0;
         int j = 0;
-        bool special_i = false;
+        bool regular_increment = false;
         bool just_added_changed_pixel = false;
+        bool just_added_unchanged_pixel = false;
 
         // Find the next changed pixel
         while (j < changed_indices.size() && i < total_pixels) 
         {
-            special_i = false;
-
-            if (changed_pixels == nullptr)
-                changed = true;
-            else
-            {
-                // Check if the index is within the valid range, if not, assign `true` to indicate out-of-bounds
-                changed = (i >= 0 && i < total_pixels) ? changed_pixels->data[i] : true;
-
-                // Check if the next index is within the valid range, if not, assign `true` to indicate out-of-bounds
-                next_changed = ((i + 1) < total_pixels) ? changed_pixels->data[i + 1] : true;
-
-                // Check if the previous index is within the valid range, if not, assign `true` to indicate out-of-bounds
-                prev_changed = (i > 0) ? changed_pixels->data[i - 1] : true;
-            }
             // -2 just to see if simple iteration works
-            if (same_color_start == -2 && j < changed_indices.size() && (just_added_changed_pixel))
+            if (j < changed_indices.size() && (just_added_unchanged_pixel))
             {
                 // Skip ahead to the next changed pixel
                 i = changed_indices[j];
-
-                if (changed_pixels == nullptr)
-                    changed = true;
-                else
-                    changed = changed_pixels->data[i];
+                std::cout << "skipping to " << i << std::endl;
+                regular_increment = false;
             }
             else
             {
                 // Simple iteration (we already incremented i once before)
                 i = i;
-                special_i = true;
-
-                if (changed_pixels == nullptr)
-                    changed = true;
-                else
-                    changed = changed_pixels->data[i];
+                regular_increment = true;
             }
+
+            if (changed_pixels == nullptr)
+                changed = true;
+            else
+                changed = changed_pixels->data[i];
+            
+            // Let's check if i is in changed_indices and if it matches the value of "changed"
+            // bool i_in_changed_indices = std::find(changed_indices.begin(), changed_indices.end(), i) != changed_indices.end();
+            // if (i_in_changed_indices != changed) {
+            //     std::cout << "Mismatch at i = " << i << ": changed = " << changed << ", but i is " << (i_in_changed_indices ? "" : "not ") << "in changed_indices." << std::endl;
+            // }
 
 
             just_added_changed_pixel = false;
-
+            just_added_unchanged_pixel = false;
 
             if (changed) 
             {
@@ -157,11 +160,14 @@ extern "C" {
                 s += std::to_string(same_color_start) + "+" + std::to_string(i - 1 - same_color_start) + "_" + last_color;
                 same_color_start = -1;
                 last_color = "";
+                just_added_unchanged_pixel = true;
             }
 
-            if (special_i)
+            if (regular_increment)
             {
                 i++;
+                if (i > changed_indices[j])
+                    j++;
             }
             else
             {
