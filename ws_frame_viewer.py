@@ -72,6 +72,7 @@ class AdvancedDisplayStrategy(DisplayStrategy):
                         message = await websocket.recv()
                         # Encoding as UTF-8, but in Logix we will decode the RGB character as UTF-32.
                         # This still works because the unicode code points are identical for both.
+                        print(message)
                         message_bytes = len(message.encode('utf-8'))
                         logger.info(f"Received message with {message_bytes} bytes, {len(message)} chars.")
                         if not display_strategy.display(message):
