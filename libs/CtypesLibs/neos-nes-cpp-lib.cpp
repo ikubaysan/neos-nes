@@ -52,6 +52,13 @@ extern "C" {
         return color;
     }
 
+     // C++ function to split and encode the index
+    std::string encode_index(int index) {
+        int part1 = std::min(55295, index);
+        int part2 = index - part1;
+        return encode_utf8(part1) + encode_utf8(part2);
+    }
+
     // Function to convert the array of pixels to a string representation
     void frame_to_string(Array3D* current_frame, Array3D* last_frame, char* output) {
         static Array3D* cached_last_frame = nullptr;
@@ -95,20 +102,20 @@ extern "C" {
 
                 if (color != last_color) {
                     if (!last_color.empty() && same_color_start != -1) {
-                        ss << encode_utf8(same_color_start + 0x80) << encode_utf8(i - 1 - same_color_start + 0x80) << last_color;
+                        ss << encode_index(same_color_start) << encode_utf8(i - 1 - same_color_start + 0x80) << last_color;
                     }
                     same_color_start = i;
                     last_color = color;
                 }
             } else if (same_color_start != -1 && !changed) {
-                ss << encode_utf8(same_color_start + 0x80) << encode_utf8(i - 1 - same_color_start + 0x80) << last_color;
+                ss << encode_index(same_color_start) << encode_utf8(i - 1 - same_color_start + 0x80) << last_color;
                 same_color_start = -1;
                 last_color = "";
             }
         }
 
         if (same_color_start != -1) {
-            ss << encode_utf8(same_color_start + 0x80) << encode_utf8(total_pixels - 1 - same_color_start + 0x80) << last_color;
+            ss << encode_index(same_color_start + 0x80) << encode_utf8(total_pixels - 1 - same_color_start + 0x80) << last_color;
         }
 
         cached_output = ss.str();
@@ -116,6 +123,5 @@ extern "C" {
         std::strncpy(output, cached_output.c_str(), cached_output.size());
         output[cached_output.size()] = '\0';
     }
-
 
 }

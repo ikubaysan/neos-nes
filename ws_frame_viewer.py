@@ -25,6 +25,9 @@ def utf32_to_rgb(utf32_str):
     b = (rgb_int & 0x3F) << 2
     return (r, g, b)
 
+def decode_index(char1, char2):
+    return ord(char1) + ord(char2)
+
 class DisplayStrategy(ABC):
     @abstractmethod
     def display(self, frame):
@@ -42,13 +45,17 @@ class AdvancedDisplayStrategy(DisplayStrategy):
         self.canvas = np.zeros((240, 256, 3), dtype=np.uint8)  # Initialize an empty canvas
 
     def update_canvas(self, message):
-        for i in range(0, len(message), 3):
-            start = ord(message[i]) - 0x80
-            range_length = ord(message[i + 1]) - 0x80
-            color = utf32_to_rgb(message[i + 2])
+        for i in range(0, len(message), 4):
+            start = decode_index(message[i], message[i + 1])
+            range_length = ord(message[i + 2]) - 0x80
+            color = utf32_to_rgb(message[i + 3])
 
             for j in range(start, start + range_length + 1):
                 x, y = j // 256, j % 256  # Convert 1D position back to 2D
+                if x == 240:
+                    x = 239
+                if y == 256:
+                    y = 255
                 self.canvas[x][y] = color
 
     def display(self, frame):
