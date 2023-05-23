@@ -75,10 +75,17 @@ extern "C" {
         // Find the next changed pixel
         while (j < changed_indices.size() && i < total_pixels) 
         {
-            if (j < changed_indices.size() && (just_added_unchanged_pixel))
+            if (j < changed_indices.size() && (just_added_unchanged_pixel) && i < changed_indices[changed_indices.size()])
             {
                 // Skip ahead to the next changed pixel
-                i = changed_indices[j];
+                //i = changed_indices[j];
+
+                int k = 0;
+                // set i to the next changed pixel that is greater than i
+                while (k < changed_indices.size() && changed_indices[k] <= i)
+                    k++;
+                i = changed_indices[k];
+
                 std::cout << "skipping to " << i << std::endl;
                 regular_increment = false;
             }
@@ -145,7 +152,7 @@ extern "C" {
             if (regular_increment)
             {
                 i++;
-                if (i > changed_indices[j])
+                if (i >= changed_indices[j])
                     j++;
             }
             else
