@@ -43,6 +43,8 @@ class NESGameServer:
         self.last_full_frame_time = time.time()
         self.full_frame_interval = 5.0  # 5 seconds
 
+        self.last_render_time = time.time()
+
     async def main(self):
         # Start the WebSocket servers and the emulation concurrently
         await asyncio.gather(self.controller.start(), self.frame.start(), self.start_emulation())
@@ -55,7 +57,14 @@ class NESGameServer:
         done = False
         while not done:
             # Process frame
-            state, _, done, _ = emulator.step(action=self.controller.current_action)
+
+            if time.time() - self.last_render_time < 1.0 / 60.0:
+                await asyncio.sleep(0)
+                if time.time() - self.last_render_time < 1.0 / 60.0:
+                    continue
+            self.last_render_time = time.time()
+
+            state, _, done, _ = self.emulator.step(action=self.controller.current_action)
             state = state.astype('uint8')
 
             if time.time() - self.last_full_frame_time >= self.full_frame_interval:
@@ -66,11 +75,9 @@ class NESGameServer:
 
             # Log the size of the message in bytes
             message_size_bytes = len(utf32_data)
-            #logger.info(f"Message size: {message_size_bytes} chars")
+            # logger.info(f"Message size: {message_size_bytes} chars")
 
-            # Render the emulator state in a window
-            emulator.render()
-
+            self.emulator.render()
             await self.frame.broadcast(utf32_data)
 
             self.execution_count += 1
@@ -80,11 +87,6 @@ class NESGameServer:
                 logger.info(f"frames per second: {self.execution_count}")
                 self.execution_count = 0
                 self.previous_fps_check_time = time.time()
-                # speed_profiler.stop()
-                # speed_profiler.start()
-
-            # Constant delay for each frame
-            await asyncio.sleep(1.0 / 120.0)
 
 
 if __name__ == "__main__":
