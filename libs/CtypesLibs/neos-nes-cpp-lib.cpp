@@ -16,14 +16,10 @@ extern "C" {
         bool* data;
     } BoolArray;
 
-    std::unordered_map<int, std::string> utf8_cache;
+    std::unordered_map<int, std::string> rgb_to_utf8_cache;
 
     std::string encode_utf8(int unicode) {
-        auto cached = utf8_cache.find(unicode);
-        if (cached != utf8_cache.end()) return cached->second;
-
         std::string color;
-
         if (unicode == 0) {
             // Replace null terminate symbol with a different unicode character
             // TODO: I might want to change this to something else. For now this is fine.
@@ -45,7 +41,6 @@ extern "C" {
             color.push_back(0x80 | ((unicode >> 6) & 0x3F));
             color.push_back(0x80 | (unicode & 0x3F));
         }
-        utf8_cache[unicode] = color;
         return color;
     }
 
@@ -85,7 +80,17 @@ extern "C" {
                         rgb_int = 0xE000;  // Minimum value just after the surrogate range
                 }
 
-                std::string color = encode_utf8(rgb_int);
+                auto cached = rgb_to_utf8_cache.find(rgb_int);
+                std::string color;
+                if (cached != rgb_to_utf8_cache.end()) {
+                    // If found in the cache, use the cached value
+                    color = cached->second;
+                } else {
+                    // If not found in the cache, compute the value and store it in the cache
+                    color = encode_utf8(rgb_int);
+                    rgb_to_utf8_cache[rgb_int] = color;
+                }
+
                 if (color != last_color)
                 {
                     if (!last_color.empty() && same_color_start != -1) {
