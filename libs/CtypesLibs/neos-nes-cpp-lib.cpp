@@ -55,32 +55,51 @@ extern "C" {
 
         bool just_added_unchanged_pixel = false;
 
-
+        int max_changed_index = 0;
         std::vector<int> changed_indices;
         for (int i = 0; i < total_pixels; ++i) {
             if (changed_pixels == nullptr)
+            {
                 changed_indices.push_back(i);
+                if (i > max_changed_index)
+                    max_changed_index = i;
+            }
             else if (changed_pixels->data[i])
+            {
                 changed_indices.push_back(i);
+                if (i > max_changed_index)
+                    max_changed_index = i;
+            }
         }
-
+        //std::cout << "Elements in changed_indices: " << changed_indices.size() << std::endl;
         int i = 0;
+        int j = 0;
         while (i < total_pixels)
         {
-            if (changed_pixels == nullptr)
-                changed = true;
-            else
-                changed = changed_pixels->data[i];
-            
+            if (changed_indices.size() > 0 && j < changed_indices.size() - 1 && i > changed_indices[j])
+            {
+                j++;
+            }
+
             if (just_added_unchanged_pixel)
             {
-                if (!changed) 
+                std::cout << "Just added unchanged pixel" << std::endl;
+                if (changed_indices.size() > 0 && i < max_changed_index && i < changed_indices[j])
                 {
+                    std::cout << "Skipping unchanged pixel" << std::endl;
+                    std::cout << "j: " << j << std::endl;
+                    std::cout << "i: " << i << std::endl;
                     i++;
                     continue;
                 }
                 just_added_unchanged_pixel = false;
             }
+
+
+            if (changed_pixels == nullptr)
+                changed = true;
+            else
+                changed = changed_pixels->data[i];
 
             if (changed) {
                 unsigned char* pixel = array->data + i * array->shape[2];
