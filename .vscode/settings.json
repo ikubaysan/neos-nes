@@ -1,5 +1,8 @@
 {
     "files.associations": {
-        "xstring": "cpp"
+        "xstring": "cpp",
+        "chrono": "cpp",
+        "codecvt": "cpp",
+        "xlocale": "cpp"
     }
 }
