@@ -2,6 +2,7 @@
 #include <cstring>
 #include <sstream>
 #include <iostream>
+#include <unordered_map>
 
 extern "C" {
 
@@ -15,7 +16,12 @@ extern "C" {
         bool* data;
     } BoolArray;
 
+    std::unordered_map<int, std::string> utf8_cache;
+
     std::string encode_utf8(int unicode) {
+        auto cached = utf8_cache.find(unicode);
+        if (cached != utf8_cache.end()) return cached->second;
+
         std::string color;
 
         if (unicode == 0) {
@@ -39,6 +45,7 @@ extern "C" {
             color.push_back(0x80 | ((unicode >> 6) & 0x3F));
             color.push_back(0x80 | (unicode & 0x3F));
         }
+        utf8_cache[unicode] = color;
         return color;
     }
 
@@ -49,9 +56,6 @@ extern "C" {
         int same_color_start = -1;
         int total_pixels = array->shape[0] * array->shape[1];
         bool changed;
-        //int change_count = 0;
-        //int range_count = 0;
-        //int passed_in_change_count = 0;
 
         // Iterate over each pixel in the array
         for (int i = 0; i < total_pixels; ++i) {
@@ -86,28 +90,23 @@ extern "C" {
                 {
                     if (!last_color.empty() && same_color_start != -1) {
                     ss << same_color_start << "+" << i - 1 - same_color_start << "_" << last_color;
-                    //range_count++;
-                    //std::cout << "Found Range: " << same_color_start << "+" << i - 1 - same_color_start << "_" << last_color << std::endl;
+                    //std::cout << "Found t1 Range: " << same_color_start << "+" << i - 1 - same_color_start << "_" << last_color << std::endl;
                     }
                     same_color_start = i;
                     last_color = color;
-                    //change_count++;
                 }
          
             } else if (!changed && same_color_start != -1) {
                 ss << same_color_start << "+" << i - 1 - same_color_start << "_" << last_color;
-                //range_count++;
-                //std::cout << "Found interesting Range: " << same_color_start << "+" << i - 1 - same_color_start << "_" << last_color << std::endl;
+                //std::cout << "Found t2 range: " << same_color_start << "+" << i - 1 - same_color_start << "_" << last_color << std::endl;
                 same_color_start = -1;
                 last_color = "";
             }
-
         }
 
         // After all pixels have been processed, handle any remaining color streak
         if (same_color_start != -1) {
             ss << same_color_start << "+" << total_pixels - 1 - same_color_start << "_" << last_color;
-            //range_count++;
             //std::cout << "Found Range: " << same_color_start << "+" << total_pixels - 1 - same_color_start << "_" << last_color << std::endl;
         }
 
@@ -121,16 +120,5 @@ extern "C" {
         // Get the maximum number of bytes and characters for the output buffer
         size_t max_bytes = sizeof(output);
         size_t max_chars = max_bytes / sizeof(char) - 1;  // Exclude the null-terminator
-
-        // // Print the number of changes, total pixels, range count, maximum bytes, and maximum characters
-        // std::cout << "Passed-in Changes: " << passed_in_change_count << std::endl;
-        // std::cout << "Found Changes: " << change_count << std::endl;
-        // std::cout << "Total Pixels: " << total_pixels << std::endl;
-        // std::cout << "Range Count: " << range_count << std::endl;
-        // std::cout << "Maximum Bytes: " << max_bytes << std::endl;
-        // std::cout << "Maximum Characters: " << max_chars << std::endl;
-        // std::cout << "ss: " << ss.str() << std::endl;
-        // std::cout << "Output: " << output << std::endl;
-        // std::cout << "Done!" << std::endl;
     }
 }
