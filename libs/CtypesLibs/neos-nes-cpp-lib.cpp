@@ -45,24 +45,35 @@ extern "C" {
     }
 
     // Function to convert the array of pixels to a string representation
-    void frame_to_string(Array3D* array, BoolArray* changed_pixels, char* output) {
-        std::string s;
+    void frame_to_string(Array3D* current_frame, Array3D* last_frame, char* output) {
+        static Array3D* cached_last_frame = nullptr;
+        static std::string cached_output;
+        if (last_frame == cached_last_frame) {
+            std::strncpy(output, cached_output.c_str(), cached_output.size());
+            output[cached_output.size()] = '\0';
+            return;
+        }
+
+        std::ostringstream ss;
         std::string last_color = "";
         int same_color_start = -1;
-        int total_pixels = array->shape[0] * array->shape[1];
+        int total_pixels = current_frame->shape[0] * current_frame->shape[1];
         bool changed;
 
-        for (int i = 0; i < total_pixels; ++i) {
-            if (changed_pixels == nullptr)
-                changed = true;
-            else
-                changed = changed_pixels->data[i];
+        unsigned char* current_pixel = current_frame->data;
+        unsigned char* last_pixel = last_frame ? last_frame->data : nullptr;
+
+        for (int i = 0; i < total_pixels; ++i, current_pixel += current_frame->shape[2]) {
+            changed = true;
+            if (last_frame) {
+                changed = memcmp(current_pixel, last_pixel, current_frame->shape[2]) != 0;
+                last_pixel += last_frame->shape[2];
+            }
 
             if (changed) {
-                unsigned char* pixel = array->data + i * array->shape[2];
-                int r = pixel[0] >> 2;
-                int g = pixel[1] >> 2;
-                int b = pixel[2] >> 2;
+                int r = current_pixel[0] >> 2;
+                int g = current_pixel[1] >> 2;
+                int b = current_pixel[2] >> 2;
                 int rgb_int = b << 10 | g << 5 | r;
 
                 if (0xD800 <= rgb_int && rgb_int <= 0xDFFF) {
@@ -83,24 +94,27 @@ extern "C" {
 
                 if (color != last_color) {
                     if (!last_color.empty() && same_color_start != -1) {
-                        s += std::to_string(same_color_start) + "+" + std::to_string(i - 1 - same_color_start) + "_" + last_color;
+                        ss << same_color_start << "+" << i - 1 - same_color_start << "_" << last_color;
                     }
                     same_color_start = i;
                     last_color = color;
                 }
             } else if (same_color_start != -1 && !changed) {
-                s += std::to_string(same_color_start) + "+" + std::to_string(i - 1 - same_color_start) + "_" + last_color;
+                ss << same_color_start << "+" << i - 1 - same_color_start << "_" << last_color;
                 same_color_start = -1;
                 last_color = "";
             }
         }
 
         if (same_color_start != -1) {
-            s += std::to_string(same_color_start) + "+" + std::to_string(total_pixels - 1 - same_color_start) + "_" + last_color;
+            ss << same_color_start << "+" << total_pixels - 1 - same_color_start << "_" << last_color;
         }
 
-        std::strncpy(output, s.c_str(), s.size());
-        output[s.size()] = '\0';
+        cached_output = ss.str();
+        cached_last_frame = last_frame;
+        std::strncpy(output, cached_output.c_str(), cached_output.size());
+        output[cached_output.size()] = '\0';
     }
+
 
 }

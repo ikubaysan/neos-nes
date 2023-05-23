@@ -66,7 +66,7 @@ class NESGameServer:
 
             # Log the size of the message in bytes
             message_size_bytes = len(utf32_data)
-            logger.info(f"Message size: {message_size_bytes} chars")
+            #logger.info(f"Message size: {message_size_bytes} chars")
 
             # Render the emulator state in a window
             emulator.render()
