@@ -66,19 +66,6 @@ extern "C" {
                 changed_indices.push_back(i);
         }
 
-        // std::cout << "(C++) changed_indices.size() = " << changed_indices.size() << std::endl;
-        // // Create a string representation of the changed pixel indices
-        // std::string indices_str;
-        // for (int i = 0; i < changed_indices.size(); ++i) {
-        //     indices_str += "(" + std::to_string(changed_indices[i]) + ")";
-        //     if (i < changed_indices.size() - 1)
-        //         indices_str += ", ";
-        // }
-
-        // // Print the indices of the changed pixels as a single string
-        // std::cout << "(C++) Indices of changed pixels: " << indices_str << std::endl;
-
-
         int i = 0;
         int j = 0;
         bool regular_increment = false;
@@ -88,7 +75,6 @@ extern "C" {
         // Find the next changed pixel
         while (j < changed_indices.size() && i < total_pixels) 
         {
-            // -2 just to see if simple iteration works
             if (j < changed_indices.size() && (just_added_unchanged_pixel))
             {
                 // Skip ahead to the next changed pixel
@@ -107,13 +93,6 @@ extern "C" {
                 changed = true;
             else
                 changed = changed_pixels->data[i];
-            
-            // Let's check if i is in changed_indices and if it matches the value of "changed"
-            // bool i_in_changed_indices = std::find(changed_indices.begin(), changed_indices.end(), i) != changed_indices.end();
-            // if (i_in_changed_indices != changed) {
-            //     std::cout << "Mismatch at i = " << i << ": changed = " << changed << ", but i is " << (i_in_changed_indices ? "" : "not ") << "in changed_indices." << std::endl;
-            // }
-
 
             just_added_changed_pixel = false;
             just_added_unchanged_pixel = false;
