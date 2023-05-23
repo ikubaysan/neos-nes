@@ -1,6 +1,7 @@
 #include <string>
 #include <cstring>
 #include <sstream>
+#include <vector>
 #include <iostream>
 #include <unordered_map>
 
@@ -45,27 +46,85 @@ extern "C" {
     }
 
     // Function to convert the array of pixels to a string representation
-    void frame_to_string(Array3D* array, BoolArray* changed_pixels, char* output) {
+    void frame_to_string(Array3D* array, BoolArray* changed_pixels, char* output) 
+    {
         std::string s;
         std::string last_color = "";
         int same_color_start = -1;
         int total_pixels = array->shape[0] * array->shape[1];
         bool changed;
+        bool next_changed;
+        bool prev_changed;
 
+        // Create a vector of indices of changed pixels
+        std::vector<int> changed_indices;
         for (int i = 0; i < total_pixels; ++i) {
+            if (changed_pixels == nullptr)
+                changed_indices.push_back(i);
+            else if (changed_pixels->data[i])
+                changed_indices.push_back(i);
+        }
+
+        int i = 0;
+        int j = 0;
+        bool special_i = false;
+        bool just_added_changed_pixel = false;
+
+        // Find the next changed pixel
+        while (j < changed_indices.size() && i < total_pixels) 
+        {
+            special_i = false;
+
             if (changed_pixels == nullptr)
                 changed = true;
             else
-                changed = changed_pixels->data[i];
+            {
+                // Check if the index is within the valid range, if not, assign `true` to indicate out-of-bounds
+                changed = (i >= 0 && i < total_pixels) ? changed_pixels->data[i] : true;
 
-            if (changed) {
+                // Check if the next index is within the valid range, if not, assign `true` to indicate out-of-bounds
+                next_changed = ((i + 1) < total_pixels) ? changed_pixels->data[i + 1] : true;
+
+                // Check if the previous index is within the valid range, if not, assign `true` to indicate out-of-bounds
+                prev_changed = (i > 0) ? changed_pixels->data[i - 1] : true;
+            }
+            // -2 just to see if simple iteration works
+            if (same_color_start == -2 && j < changed_indices.size() && (just_added_changed_pixel))
+            {
+                // Skip ahead to the next changed pixel
+                i = changed_indices[j];
+
+                if (changed_pixels == nullptr)
+                    changed = true;
+                else
+                    changed = changed_pixels->data[i];
+            }
+            else
+            {
+                // Simple iteration (we already incremented i once before)
+                i = i;
+                special_i = true;
+
+                if (changed_pixels == nullptr)
+                    changed = true;
+                else
+                    changed = changed_pixels->data[i];
+            }
+
+
+            just_added_changed_pixel = false;
+
+
+            if (changed) 
+            {
                 unsigned char* pixel = array->data + i * array->shape[2];
                 int r = pixel[0] >> 2;
                 int g = pixel[1] >> 2;
                 int b = pixel[2] >> 2;
                 int rgb_int = b << 10 | g << 5 | r;
 
-                if (0xD800 <= rgb_int && rgb_int <= 0xDFFF) {
+                if (0xD800 <= rgb_int && rgb_int <= 0xDFFF) 
+                {
                     if (rgb_int < 0xDC00)
                         rgb_int = 0xD7FF;
                     else
@@ -74,33 +133,47 @@ extern "C" {
 
                 auto cached = rgb_to_utf8_cache.find(rgb_int);
                 std::string color;
-                if (cached != rgb_to_utf8_cache.end()) {
+                if (cached != rgb_to_utf8_cache.end()) 
+                {
                     color = cached->second;
-                } else {
+                } else 
+                {
                     color = encode_utf8(rgb_int);
                     rgb_to_utf8_cache[rgb_int] = color;
                 }
 
-                if (color != last_color) {
+                if (color != last_color) 
+                {
                     if (!last_color.empty() && same_color_start != -1) {
                         s += std::to_string(same_color_start) + "+" + std::to_string(i - 1 - same_color_start) + "_" + last_color;
                     }
                     same_color_start = i;
                     last_color = color;
+                    just_added_changed_pixel = true;
                 }
-            } else if (same_color_start != -1 && !changed) {
+            }
+            else if (same_color_start != -1 && !changed) 
+            {
                 s += std::to_string(same_color_start) + "+" + std::to_string(i - 1 - same_color_start) + "_" + last_color;
                 same_color_start = -1;
                 last_color = "";
             }
+
+            if (special_i)
+            {
+                i++;
+            }
+            else
+            {
+                j++;
+            }
         }
 
-        if (same_color_start != -1) {
+        if (same_color_start != -1)
+        {
             s += std::to_string(same_color_start) + "+" + std::to_string(total_pixels - 1 - same_color_start) + "_" + last_color;
         }
-
         std::strncpy(output, s.c_str(), s.size());
         output[s.size()] = '\0';
     }
-
 }
