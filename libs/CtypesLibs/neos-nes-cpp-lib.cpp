@@ -22,24 +22,32 @@ extern "C" {
         std::string color;
         if (unicode == 0) {
             // Replace null terminate symbol with a different unicode character
-            // TODO: I might want to change this to something else. For now this is fine.
-            // I definitely need this, otherwise my strings will be cut off.
             color.push_back(0x1);
         }
-        else if (unicode < 0x80) {
-            color.push_back(unicode);
-        } else if (unicode < 0x800) {
-            color.push_back(0xC0 | (unicode >> 6));
-            color.push_back(0x80 | (unicode & 0x3F));
-        } else if (unicode < 0x10000) {
-            color.push_back(0xE0 | (unicode >> 12));
-            color.push_back(0x80 | ((unicode >> 6) & 0x3F));
-            color.push_back(0x80 | (unicode & 0x3F));
-        } else {
-            color.push_back(0xF0 | (unicode >> 18));
-            color.push_back(0x80 | ((unicode >> 12) & 0x3F));
-            color.push_back(0x80 | ((unicode >> 6) & 0x3F));
-            color.push_back(0x80 | (unicode & 0x3F));
+        else {
+            // Handle surrogate pairs
+            if (0xD800 <= unicode && unicode <= 0xDFFF) {
+                if (unicode < 0xDC00)
+                    unicode = 0xD7FF;
+                else
+                    unicode = 0xE000;
+            }
+
+            if (unicode < 0x80) {
+                color.push_back(unicode);
+            } else if (unicode < 0x800) {
+                color.push_back(0xC0 | (unicode >> 6));
+                color.push_back(0x80 | (unicode & 0x3F));
+            } else if (unicode < 0x10000) {
+                color.push_back(0xE0 | (unicode >> 12));
+                color.push_back(0x80 | ((unicode >> 6) & 0x3F));
+                color.push_back(0x80 | (unicode & 0x3F));
+            } else {
+                color.push_back(0xF0 | (unicode >> 18));
+                color.push_back(0x80 | ((unicode >> 12) & 0x3F));
+                color.push_back(0x80 | ((unicode >> 6) & 0x3F));
+                color.push_back(0x80 | (unicode & 0x3F));
+            }
         }
         return color;
     }
@@ -75,13 +83,6 @@ extern "C" {
                 int g = current_pixel[1] >> 2;
                 int b = current_pixel[2] >> 2;
                 int rgb_int = b << 10 | g << 5 | r;
-
-                if (0xD800 <= rgb_int && rgb_int <= 0xDFFF) {
-                    if (rgb_int < 0xDC00)
-                        rgb_int = 0xD7FF;
-                    else
-                        rgb_int = 0xE000;
-                }
 
                 auto cached = rgb_to_utf8_cache.find(rgb_int);
                 std::string color;
