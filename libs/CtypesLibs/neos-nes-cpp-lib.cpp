@@ -83,13 +83,13 @@ extern "C" {
 
             if (just_added_unchanged_pixel)
             {
-                std::cout << "Just added unchanged pixel" << std::endl;
-                if (changed_indices.size() > 0 && i < max_changed_index && i < changed_indices[j])
+                //std::cout << "Just added unchanged pixel" << std::endl;
+                if (changed_indices.size() > 0 && i < changed_indices[j])
                 {
-                    std::cout << "Skipping unchanged pixel" << std::endl;
-                    std::cout << "j: " << j << std::endl;
-                    std::cout << "i: " << i << std::endl;
-                    i++;
+                    //std::cout << "Skipping unchanged pixels" << std::endl;
+                    //std::cout << "j: " << j << std::endl;
+                    //std::cout << "i: " << i << std::endl;
+                    i = changed_indices[j];
                     continue;
                 }
                 just_added_unchanged_pixel = false;

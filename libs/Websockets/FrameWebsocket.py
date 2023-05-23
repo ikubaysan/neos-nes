@@ -84,6 +84,15 @@ class FrameWebsocket(BaseWebsocket):
         else:
             changed_pixels = np.ones((frame.shape[0], frame.shape[1]), dtype=bool)
 
+        # # Count the number of changed pixels
+        # num_changed_pixels = np.count_nonzero(changed_pixels)
+        #
+        # # Log the count of changed pixels
+        # print(f"(Python) Number of changed pixels: {num_changed_pixels}")
+        # changed_indices = np.argwhere(changed_pixels)
+        # indices_str = ", ".join([f"({idx[0]}, {idx[1]})" for idx in changed_indices])
+        # print(f"(Python) Indices of changed pixels: {indices_str}")
+
         message = self._frame_to_string_common(frame, changed_pixels)
         self.last_frame = frame
         return message
