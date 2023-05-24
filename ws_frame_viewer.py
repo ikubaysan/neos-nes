@@ -52,9 +52,10 @@ class AdvancedDisplayStrategy(DisplayStrategy):
 
             for j in range(start, start + range_length + 1):
                 x, y = j // 256, j % 256  # Convert 1D position back to 2D
+                # Correction to prevent out of array bounds error
                 if x == 240:
                     x = 239
-                if y == 256:
+                elif y == 256:
                     y = 255
                 self.canvas[x][y] = color
 

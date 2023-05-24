@@ -35,7 +35,7 @@ class NESGameServer:
     MAX_PUBLISH_FRAME_RATE: float = 40.0
 
     # Reduces amount of changed pixels, so this can improve FPS.
-    SCANLINES_ENABLED: bool = False
+    SCANLINES_ENABLED: bool = True
 
     def __init__(self, emulator:NESEnv, host, controller_port, frame_port):
         # WebSocket server configuration
@@ -54,7 +54,7 @@ class NESGameServer:
         self.previous_fps_check_time = time.time()
 
         self.last_full_frame_time = time.time()
-        self.full_frame_interval = 5.0  # 5 seconds
+        self.full_frame_interval = 5000.0  # 5 seconds
 
         self.last_render_time = time.time()
         self.last_frame_publish_time = time.time()
