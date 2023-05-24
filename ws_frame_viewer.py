@@ -3,7 +3,6 @@ import websockets
 import cv2
 import numpy as np
 import logging
-import re
 from abc import ABC, abstractmethod
 
 # Configure logging
@@ -26,11 +25,8 @@ def utf32_to_rgb(utf32_str):
     b = (rgb_int & 0x3F) << 2
     return (r, g, b)
 
-def string_to_frame(data):
-    """Converts a string of UTF-32 characters to a frame (2D array of RGB tuples)"""
-    pixels = [utf32_to_rgb(ch) for ch in data]
-    return np.array(pixels).reshape(240, 256, 3)
-
+def decode_index(char1, char2):
+    return ord(char1) + ord(char2)
 
 class DisplayStrategy(ABC):
     @abstractmethod
@@ -49,15 +45,17 @@ class AdvancedDisplayStrategy(DisplayStrategy):
         self.canvas = np.zeros((240, 256, 3), dtype=np.uint8)  # Initialize an empty canvas
 
     def update_canvas(self, message):
-        pixel_ranges = re.findall(r'\d+\+\d+_.', message)
-        for pixel_range in pixel_ranges:
-            range_str = pixel_range[:-2]
-            color_str = pixel_range[-1]
+        for i in range(0, len(message), 4):
+            start = decode_index(message[i], message[i + 1])
+            range_length = ord(message[i + 2]) - 0x80
+            color = utf32_to_rgb(message[i + 3])
 
-            start, range_length = map(int, range_str.split("+"))
-            color = utf32_to_rgb(color_str)
-            for i in range(start, start + range_length + 1):
-                x, y = i // 256, i % 256  # Convert 1D position back to 2D
+            for j in range(start, start + range_length + 1):
+                x, y = j // 256, j % 256  # Convert 1D position back to 2D
+                if x == 240:
+                    x = 239
+                if y == 256:
+                    y = 255
                 self.canvas[x][y] = color
 
     def display(self, frame):
@@ -74,6 +72,7 @@ class AdvancedDisplayStrategy(DisplayStrategy):
                         message = await websocket.recv()
                         # Encoding as UTF-8, but in Logix we will decode the RGB character as UTF-32.
                         # This still works because the unicode code points are identical for both.
+                        print(message)
                         message_bytes = len(message.encode('utf-8'))
                         logger.info(f"Received message with {message_bytes} bytes, {len(message)} chars.")
                         if not display_strategy.display(message):
@@ -82,7 +81,6 @@ class AdvancedDisplayStrategy(DisplayStrategy):
                 logger.error(f"Error: {e}", exc_info=True)
                 logger.info("Trying to reconnect in 3 seconds...")
                 await asyncio.sleep(3)
-
 
 if __name__ == "__main__":
     display_strategy = AdvancedDisplayStrategy()

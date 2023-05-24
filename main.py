@@ -6,6 +6,7 @@ from libs.Websockets.ControllerWebsocket import ControllerWebsocket
 from libs.Websockets.FrameWebsocket import FrameWebsocket
 from Helpers.GeneralHelpers import *
 import time
+import numpy as np
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -29,8 +30,13 @@ speed_profiler.start()
 class NESGameServer:
     # 60.0 runs fine, but is delayed for the viewer when there is substantial movement.
     # Now I may need to look into reducing ws message sizes.
-    #MAX_FRAMERATE = 60.0
-    MAX_FRAMERATE = 30.0
+    MAX_RENDER_FRAME_RATE: float = 60.0
+    # TODO: For some reason I'm getting 20 FPS if this is 30, and 30 FPS if this is 40.
+    MAX_PUBLISH_FRAME_RATE: float = 40.0
+
+    # Reduces amount of changed pixels, so this can improve FPS.
+    SCANLINES_ENABLED: bool = False
+
     def __init__(self, emulator:NESEnv, host, controller_port, frame_port):
         # WebSocket server configuration
         self.host = host
@@ -42,13 +48,16 @@ class NESGameServer:
         self.frame = FrameWebsocket(self.host, self.frame_port)
 
         self.emulator = emulator
-        self.execution_count = 0
+        self.execution_count_rendered = 0
+        self.execution_count_published = 0
+
         self.previous_fps_check_time = time.time()
 
         self.last_full_frame_time = time.time()
         self.full_frame_interval = 5.0  # 5 seconds
 
         self.last_render_time = time.time()
+        self.last_frame_publish_time = time.time()
         self.queue = Queue()
 
     async def main(self):
@@ -62,33 +71,47 @@ class NESGameServer:
         # Emulation loop
         done = False
         while not done:
-            if time.time() - self.last_render_time < 1.0 / self.MAX_FRAMERATE:
+            if time.time() - self.last_render_time < 1.0 / self.MAX_RENDER_FRAME_RATE:
                 await asyncio.sleep(0)  # Yield control to the event loop
                 continue
             self.last_render_time = time.time()
 
             state, _, done, _ = self.emulator.step(action=self.controller.current_action)
-            state = state.astype('uint8')
 
-            if time.time() - self.last_full_frame_time >= self.full_frame_interval:
-                utf32_data = self.frame.full_frame_to_string(state)
-                self.last_full_frame_time = time.time()
-            else:
-                utf32_data = self.frame.frame_to_string(state)
 
-            # Put the frame into the queue
-            # Theoretically, if framerate is too high (> 60), the queue could fill up
-            # and frames could be produced faster than we send them.
-            await self.queue.put(utf32_data)
+            if self.SCANLINES_ENABLED:
+                # Set this RGB value for all pixels
+                state[::2, :, :] = 40
+
+                brightening_factor = 1.2  # Adjust this value to achieve the desired brightening effect
+                state[1::2, :, :] = np.clip(state[1::2, :, :] * brightening_factor, 0, 255).astype(int)
+
+            # Has enough time has elapsed to publish a frame?
+            if time.time() - self.last_frame_publish_time >= 1.0 / self.MAX_PUBLISH_FRAME_RATE:
+
+                state = state.astype('uint8')
+
+                if time.time() - self.last_full_frame_time >= self.full_frame_interval:
+                    utf32_data = self.frame.full_frame_to_string(state)
+                    self.last_full_frame_time = time.time()
+                else:
+                    utf32_data = self.frame.frame_to_string(state)
+
+                # Put the frame into the queue
+                # Theoretically, if framerate is too high (> 60), the queue could fill up
+                # and frames could be produced faster than we send them.
+                await self.queue.put(utf32_data)
+                self.last_frame_publish_time = time.time()
+                self.execution_count_published += 1
 
             self.emulator.render()
-
-            self.execution_count += 1
+            self.execution_count_rendered += 1
 
             # If a second has passed since the last reset, log and reset the execution count
             if time.time() - self.previous_fps_check_time >= 1.0:
-                logger.info(f"frames per second: {self.execution_count}")
-                self.execution_count = 0
+                logger.info(f"Rendered FPS: {self.execution_count_rendered} Published FPS: {self.execution_count_published}")
+                self.execution_count_rendered = 0
+                self.execution_count_published = 0
                 self.previous_fps_check_time = time.time()
 
     async def consume_frames(self):
