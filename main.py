@@ -6,6 +6,7 @@ from libs.Websockets.ControllerWebsocket import ControllerWebsocket
 from libs.Websockets.FrameWebsocket import FrameWebsocket
 from Helpers.GeneralHelpers import *
 import time
+import numpy as np
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -32,6 +33,10 @@ class NESGameServer:
     MAX_RENDER_FRAME_RATE: float = 60.0
     # TODO: For some reason I'm getting 20 FPS if this is 30, and 30 FPS if this is 40.
     MAX_PUBLISH_FRAME_RATE: float = 40.0
+
+    # Reduces amount of changed pixels, so this can improve FPS.
+    SCANLINES_ENABLED: bool = False
+
     def __init__(self, emulator:NESEnv, host, controller_port, frame_port):
         # WebSocket server configuration
         self.host = host
@@ -73,8 +78,17 @@ class NESGameServer:
 
             state, _, done, _ = self.emulator.step(action=self.controller.current_action)
 
+
+            if self.SCANLINES_ENABLED:
+                # Set this RGB value for all pixels
+                state[::2, :, :] = 40
+
+                brightening_factor = 1.2  # Adjust this value to achieve the desired brightening effect
+                state[1::2, :, :] = np.clip(state[1::2, :, :] * brightening_factor, 0, 255).astype(int)
+
             # Has enough time has elapsed to publish a frame?
             if time.time() - self.last_frame_publish_time >= 1.0 / self.MAX_PUBLISH_FRAME_RATE:
+
                 state = state.astype('uint8')
 
                 if time.time() - self.last_full_frame_time >= self.full_frame_interval:
