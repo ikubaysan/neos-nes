@@ -1,6 +1,9 @@
 import cProfile
 import pstats
 
+DEFAULT_FRAME_WIDTH = 240
+DEFAULT_FRAME_HEIGHT = 256
+
 class SpeedProfiler:
     def __init__(self):
         self.pr = cProfile.Profile()

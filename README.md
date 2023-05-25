@@ -1,9 +1,16 @@
 # neos-nes
 NES emulation for NeosVR
 
-32-bit Python 3
 
-GNU C++ Compiler - MinGW-w64 
+
+## Getting started:
+
+Install 64-bit Python 3
+
+Install GNU C++ Compiler - MinGW-w64 
+
+Download from here, and choose 64-bit:
+https://github.com/niXman/mingw-builds-binaries
 
 `pip3 install -r requirements.txt`
 
