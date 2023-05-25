@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 import logging
 from abc import ABC, abstractmethod
+from Helpers.GeneralHelpers import *
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -41,8 +42,14 @@ class DisplayStrategy(ABC):
         return True
 
 class AdvancedDisplayStrategy(DisplayStrategy):
+    SCALE_PERCENTAGE = 50
     def __init__(self):
-        self.canvas = np.zeros((240, 256, 3), dtype=np.uint8)  # Initialize an empty canvas
+        #self.canvas = np.zeros((240, 256, 3), dtype=np.uint8)  # Initialize an empty canvas
+
+        self.new_frame_width = int(DEFAULT_FRAME_WIDTH * (self.SCALE_PERCENTAGE / 100))
+        self.new_frame_height = int(DEFAULT_FRAME_HEIGHT * (self.SCALE_PERCENTAGE / 100))
+        self.canvas = np.zeros((self.new_frame_width, self.new_frame_height, 3), dtype=np.uint8)  # Initialize an empty canvas
+
 
     def update_canvas(self, message):
         for i in range(0, len(message), 4):
@@ -51,11 +58,12 @@ class AdvancedDisplayStrategy(DisplayStrategy):
             color = utf32_to_rgb(message[i + 3])
 
             for j in range(start, start + range_length + 1):
-                x, y = j // 256, j % 256  # Convert 1D position back to 2D
-                if x == 240:
-                    x = 239
-                if y == 256:
-                    y = 255
+                x, y = j // self.new_frame_height, j % self.new_frame_height  # Convert 1D position back to 2D
+                # TODO: These hit past a difference of 1 when downscaling and may be causing some inaccuracies
+                if x >= self.new_frame_width:
+                    x = self.new_frame_width - 1
+                if y >= self.new_frame_height:
+                    y = self.new_frame_height - 1
                 self.canvas[x][y] = color
 
     def display(self, frame):

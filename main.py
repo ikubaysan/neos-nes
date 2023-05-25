@@ -7,6 +7,7 @@ from libs.Websockets.FrameWebsocket import FrameWebsocket
 from Helpers.GeneralHelpers import *
 import time
 import numpy as np
+import cv2  # add this import
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -28,11 +29,20 @@ speed_profiler.start()
 # Initialize NES emulator and load ROM
 
 class NESGameServer:
-    # 60.0 runs fine, but is delayed for the viewer when there is substantial movement.
-    # Now I may need to look into reducing ws message sizes.
+    # 60.0 with 100 scale runs fine, but is delayed for the viewer when there is substantial movement.
     MAX_RENDER_FRAME_RATE: float = 60.0
     # TODO: For some reason I'm getting 20 FPS if this is 30, and 30 FPS if this is 40.
     MAX_PUBLISH_FRAME_RATE: float = 40.0
+    SCALE_PERCENTAGE = 50
+
+    SCALE_INTERPOLATION_METHOD = cv2.INTER_LINEAR
+    """
+    INTER_NEAREST looks ok but flickers
+    INTER_LINEAR looks ok
+    INTER_AREA looks ok, has some artifacting
+    INTER_CUBIC looks bad
+    INTER_LANCZOS4 looks bad
+    """
 
     # Reduces amount of changed pixels, so this can improve FPS.
     SCANLINES_ENABLED: bool = False
@@ -60,6 +70,13 @@ class NESGameServer:
         self.last_frame_publish_time = time.time()
         self.queue = Queue()
 
+        self.new_frame_width = int(DEFAULT_FRAME_WIDTH * (self.SCALE_PERCENTAGE / 100))
+        self.new_frame_height = int(DEFAULT_FRAME_HEIGHT * (self.SCALE_PERCENTAGE / 100))
+
+        logger.info(f"Default frame size: {DEFAULT_FRAME_WIDTH}x{DEFAULT_FRAME_HEIGHT}")
+        logger.info(f"Scale percentage: {self.SCALE_PERCENTAGE}%")
+        logger.info(f"Scaled frame size: {self.new_frame_width}x{self.new_frame_height}")
+
     async def main(self):
         # Start the WebSocket servers and the frame production and consumption concurrently
         await asyncio.gather(self.controller.start(), self.frame.start(), self.produce_frames(), self.consume_frames())
@@ -78,6 +95,8 @@ class NESGameServer:
 
             state, _, done, _ = self.emulator.step(action=self.controller.current_action)
 
+            if self.SCALE_PERCENTAGE < 100:
+                state = cv2.resize(state, (self.new_frame_height, self.new_frame_width), interpolation=self.SCALE_INTERPOLATION_METHOD)
 
             if self.SCANLINES_ENABLED:
                 # Set this RGB value for all pixels
