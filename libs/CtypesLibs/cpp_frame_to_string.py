@@ -54,7 +54,10 @@ class FrameToString:
             self.frame_to_string(ctypes.byref(current_array), ctypes.byref(last_array), output)
 
         # Convert the returned value to a Python string
-        string_result = output.value.decode()
+        if len(output.value) == 0:
+            string_result = ""
+        else:
+            string_result = output.value.decode()
 
         return string_result
 

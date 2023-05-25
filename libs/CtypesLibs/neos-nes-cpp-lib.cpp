@@ -2,6 +2,7 @@
 #include <cstring>
 #include <sstream>
 #include <iostream>
+#include <vector>
 #include <unordered_map>
 
 extern "C" {
@@ -17,8 +18,10 @@ extern "C" {
     } BoolArray;
 
     std::unordered_map<int, std::string> rgb_to_utf8_cache;
+    const int OFFSET = 16;
+    const int DELIMITER_CODEPOINT_DECIMAL = 2;
 
-    std::string encode_utf8(int unicode) {
+    std::string encode_utf8(int unicode, int offset = OFFSET) {
         // Function to encode a Unicode code point into UTF-8 representation
         std::string color;
         if (unicode == 0) {
@@ -26,6 +29,7 @@ extern "C" {
             color.push_back(0x1);
         }
         else {
+            unicode += offset;
             // Handle surrogate pairs
             if (0xD800 <= unicode && unicode <= 0xDFFF) {
                 if (unicode < 0xDC00)
@@ -65,6 +69,7 @@ extern "C" {
         // Function to convert the array of pixels to a string representation
         static Array3D* cached_last_frame = nullptr;
         static std::string cached_output;
+
         if (last_frame == cached_last_frame) {
             // If the last frame is the same as the cached frame, return the cached output
             std::strncpy(output, cached_output.c_str(), cached_output.size());
@@ -72,11 +77,10 @@ extern "C" {
             return;
         }
 
-        std::ostringstream ss;
-        std::string last_color = "";
-        int same_color_start = -1;
+        std::unordered_map<int, std::vector<std::pair<int, int>>> color_map;
         int total_pixels = current_frame->shape[0] * current_frame->shape[1];
         bool changed;
+        int prev_rgb_int = -1; // track the previous pixel color
 
         unsigned char* current_pixel = current_frame->data;
         unsigned char* last_pixel = last_frame ? last_frame->data : nullptr;
@@ -94,44 +98,72 @@ extern "C" {
                 int r = current_pixel[0] >> 2;
                 int g = current_pixel[1] >> 2;
                 int b = current_pixel[2] >> 2;
-                int rgb_int = b << 10 | g << 5 | r;
+                int rgb_int = (b << 10 | g << 5 | r);
 
-                auto cached = rgb_to_utf8_cache.find(rgb_int);
-                std::string color;
-                if (cached != rgb_to_utf8_cache.end()) {
-                    color = cached->second;
+                if (prev_rgb_int != -1 && rgb_int == prev_rgb_int && !color_map[rgb_int].empty()) {
+                    // if the current pixel has the same color as the previous one
+                    // increase the span length of the last entry for this color
+                    color_map[rgb_int].back().second++;
                 } else {
-                    // If the color is not in the cache, encode it and add to the cache
-                    color = encode_utf8(rgb_int);
-                    rgb_to_utf8_cache[rgb_int] = color;
+                    // otherwise start a new span
+                    color_map[rgb_int].push_back(std::make_pair(i, 1));
                 }
 
-                if (color != last_color) {
-                    // If the color is different from the last color encountered
-                    if (!last_color.empty() && same_color_start != -1) {
-                        // Add the encoded index and length of the same color span to the output
-                        ss << encode_index(same_color_start) << encode_utf8(i - 1 - same_color_start + 0x80) << last_color;
-                    }
-                    same_color_start = i;
-                    last_color = color;
-                }
-            } else if (same_color_start != -1 && !changed) {
-                // If the pixel is the same color as the last and it's part of a span of the same color
-                ss << encode_index(same_color_start) << encode_utf8(i - 1 - same_color_start + 0x80) << last_color;
-                same_color_start = -1;
-                last_color = "";
+                prev_rgb_int = rgb_int;  // update the previous color
             }
         }
 
-        if (same_color_start != -1) {
-            // Add the last span of the same color to the output
-            ss << encode_index(same_color_start + 0x80) << encode_utf8(total_pixels - 1 - same_color_start + 0x80) << last_color;
+        std::ostringstream ss;
+        for (const auto& color : color_map) {
+            // Encode the RGB integer value and append it to the string stream
+            ss << encode_utf8(color.first);
+
+            // Iterate over the pairs (pixel index and span length) for the current color
+            for (int pair_index = 0; pair_index < color.second.size(); pair_index++) {
+                // Encode the pixel index and append it to the string stream
+                ss << encode_index(color.second[pair_index].first);
+
+                // Encode the span length and append it to the string stream
+                ss << encode_utf8(color.second[pair_index].second);
+
+                // Encode the difference between the current pixel index and the pixel index of the next pair
+                int next_pixel_index;
+                if (pair_index == color.second.size() - 1) {
+                    // This is the last pair. The next pixel index is the total number of pixels
+                    next_pixel_index = total_pixels - 1;
+                } else {
+                    // The next pixel index is the pixel index of the next pair
+                    next_pixel_index = color.second[pair_index + 1].first;
+                }
+
+                int diff = next_pixel_index - color.second[pair_index].first;
+                //std::cout << "Original diff value: " << diff << std::endl;
+                ss << encode_utf8(diff);
+                //std::cout << "Encoded diff value: " << encode_utf8(diff) << std::endl;
+            }
+
+            // Append the delimiter to the string stream
+            ss << encode_utf8(DELIMITER_CODEPOINT_DECIMAL);  // delimiter
         }
 
         cached_output = ss.str();
         cached_last_frame = last_frame;
         std::strncpy(output, cached_output.c_str(), cached_output.size());
         output[cached_output.size()] = '\0';
+
+        // Print the cached output
+        //std::cout << cached_output << std::endl;
+
+        //// Print the color_map
+        std::cout << "Color Map:" << std::endl;
+        for (const auto& color : color_map) {
+            std::cout << "RGB Int: " << color.first << std::endl;
+            for (const auto& pair : color.second) {
+                std::cout << "Pixel Index: " << pair.first << ", Span Length: " << pair.second << std::endl;
+            }
+            break;
+        }
+
     }
 
 }
