@@ -42,7 +42,7 @@ class DisplayStrategy(ABC):
         return True
 
 class AdvancedDisplayStrategy(DisplayStrategy):
-    SCALE_PERCENTAGE = 50
+    SCALE_PERCENTAGE = 100
     def __init__(self):
         #self.canvas = np.zeros((240, 256, 3), dtype=np.uint8)  # Initialize an empty canvas
 
