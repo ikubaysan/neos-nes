@@ -60,6 +60,7 @@ extern "C" {
     }
 
     // Function to convert the array of pixels to a string representation
+// Function to convert the array of pixels to a string representation
     void frame_to_string(Array3D* current_frame, Array3D* last_frame, char* output) {
         static Array3D* cached_last_frame = nullptr;
         static std::string cached_output;
@@ -72,6 +73,7 @@ extern "C" {
         std::ostringstream ss;
         std::string last_color = "";
         int same_color_start = -1;
+        int row_index = 0;
         int total_pixels = current_frame->shape[0] * current_frame->shape[1];
         bool changed;
 
@@ -102,20 +104,23 @@ extern "C" {
 
                 if (color != last_color) {
                     if (!last_color.empty() && same_color_start != -1) {
-                        ss << encode_index(same_color_start) << encode_utf8(i - 1 - same_color_start + 0x80) << last_color;
+                        ss << encode_utf8(same_color_start) << encode_utf8(i % current_frame->shape[1] - same_color_start - 1) << encode_utf8(1);
                     }
-                    same_color_start = i;
+                    same_color_start = i % current_frame->shape[1];
                     last_color = color;
                 }
             } else if (same_color_start != -1 && !changed) {
-                ss << encode_index(same_color_start) << encode_utf8(i - 1 - same_color_start + 0x80) << last_color;
+                ss << encode_utf8(same_color_start) << encode_utf8(i % current_frame->shape[1] - same_color_start - 1) << encode_utf8(1);
                 same_color_start = -1;
                 last_color = "";
             }
-        }
 
-        if (same_color_start != -1) {
-            ss << encode_index(same_color_start + 0x80) << encode_utf8(total_pixels - 1 - same_color_start + 0x80) << last_color;
+            if (i % current_frame->shape[1] == current_frame->shape[1] - 1 && same_color_start != -1) {
+                ss << encode_utf8(same_color_start) << encode_utf8(i % current_frame->shape[1] - same_color_start) << encode_utf8(1);
+                same_color_start = -1;
+                last_color = "";
+                ss << encode_utf8(2);
+            }
         }
 
         cached_output = ss.str();
@@ -123,5 +128,4 @@ extern "C" {
         std::strncpy(output, cached_output.c_str(), cached_output.size());
         output[cached_output.size()] = '\0';
     }
-
 }
