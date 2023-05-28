@@ -4,6 +4,7 @@ import random
 import time
 from Helpers.GeneralHelpers import *
 from libs.DisplayStrategies.AdvancedDisplayStrategy import *
+from libs.CtypesLibs.CPPFrameToString import FrameToString
 
 HOST = '10.0.0.147'
 PORT = 9001
@@ -12,6 +13,50 @@ PORT = 9001
 def advanced_display_strategy():
     display_strategy = AdvancedDisplayStrategy(host=HOST, port=PORT, scale_percentage=100)
     return display_strategy
+
+@pytest.fixture
+def frame_to_string():
+    frame_to_string = FrameToString()
+    return frame_to_string
+
+
+def message_to_color_dictionary(message, offset):
+    # Initialize output dictionary
+    color_dict = {}
+
+    # End of color and row delimiters
+    delim_a = chr(1)
+    delim_b = chr(2)
+
+    i = 0  # Initialize index for looping through the message
+
+    while i < len(message):
+        row_idx = ord(message[i]) - offset
+        i += 1
+
+        color_dict[row_idx] = {}
+
+        while i < len(message) and message[i] != delim_b:
+            color_codepoint = utf8_to_rgb(message[i])
+            i += 1
+
+            color_dict[row_idx][color_codepoint] = []
+
+            while i < len(message) and message[i] != delim_a:
+                range_start = ord(message[i]) - offset
+                i += 1
+                range_span = ord(message[i]) - offset
+                i += 1
+                color_dict[row_idx][color_codepoint].append([range_start, range_span])
+
+            i += 1  # Skip delim_a
+
+        i += 1  # Skip delim_b
+
+    return color_dict
+
+
+
 
 def test_update_canvas_1(advanced_display_strategy: AdvancedDisplayStrategy):
     OFFSET = advanced_display_strategy.OFFSET
@@ -116,6 +161,18 @@ def test_update_canvas_2(advanced_display_strategy: AdvancedDisplayStrategy):
     advanced_display_strategy.display()
     time.sleep(3)
     return
+
+
+
+def test_update_canvas_from_cpp(frame_to_string: FrameToString, advanced_display_strategy: AdvancedDisplayStrategy):
+    current_state = np.random.randint(0, 256, (240, 256, 3), dtype=np.uint8)
+    last_state = np.random.randint(0, 256, (240, 256, 3), dtype=np.uint8)
+    message = frame_to_string.get_string(current_state, last_state)
+    message_len = len(message)
+    result_dict = message_to_color_dictionary(message=message, offset=16)
+    return
+
+
 
 
 def test_rgb_utf8_conversion():

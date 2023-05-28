@@ -21,7 +21,7 @@ extern "C"
     } BoolArray;
 
     std::unordered_map<int, std::string> rgb_to_utf8_cache;
-    const int OFFSET = 3;
+    const int OFFSET = 16;
 
     std::string encode_utf8(int unicode)
     {
@@ -29,10 +29,9 @@ extern "C"
 
         if (unicode == 0)
         {
-            // When unicode is 0, we cannot simply put 0x0 into the string as it's considered the null terminator.
-            // Moreover, 0x1 and 0x2 are reserved for delimiters. So, we start our encoding from 0x3.
-            // Here we add our OFFSET to the unicode value (0) before adding it to the string.
-            color.push_back(0x3 + OFFSET);
+            // Be careful of this hitting when there is no offset. 
+            // The codepoint would be 0, which is reserved for null and will cause problems.
+            color.push_back(OFFSET);
         }
         else
         {
@@ -160,7 +159,7 @@ extern "C"
                         //  These are correct
                         ss << encode_utf8(range.first) << encode_utf8(range.second);
                     }
-                    ss << '\x01'; // Delimiter A (end of color)
+                    ss << '\x11'; // Delimiter A (end of color)
                 }
 
                 // Clear color_ranges_map
@@ -168,7 +167,7 @@ extern "C"
 
                 if (changes_made_for_previous_row)
                 {
-                    ss << '\x02'; // Delimiter B (end of row)
+                    ss << '\x12'; // Delimiter B (end of row)
                 }
                 changes_made_for_previous_row = false;
 
@@ -185,6 +184,8 @@ extern "C"
                 int g = current_pixel[1] >> 2;
                 int b = current_pixel[2] >> 2;
                 int rgb_int = b << 10 | g << 5 | r;
+                // for testing
+                rgb_int = 30;
                 std::string color = encode_utf8(rgb_int);
 
                 // Start a new range
@@ -199,20 +200,25 @@ extern "C"
             }
         }
 
-        // // Write out the color and its ranges for the final row
-        // for (auto &color_ranges : color_ranges_map)
-        // {
-        //     ss << color_ranges.first;
-        //     for (auto &range : color_ranges.second)
-        //     {
-        //         ss << encode_utf8(range.first) << encode_utf8(range.second);
-        //     }
-        //     ss << '\x01'; // Delimiter A (end of color)
-        //     changes_made_for_previous_row = true;
-        // }
+        // Write out the color and its ranges for the final row
+        if (!color_ranges_map.empty())
+        {
+            ss << encode_utf8(current_frame->shape[0] - 1);
+            changes_made_for_previous_row = true;
+        }
 
-        // if (changes_made_for_previous_row)
-        //     ss << '\x02'; // Delimiter B (end of row)
+        for (auto &color_ranges : color_ranges_map)
+        {
+            ss << color_ranges.first;
+            for (auto &range : color_ranges.second)
+            {
+                ss << encode_utf8(range.first) << encode_utf8(range.second);
+            }
+            ss << '\x11'; // Delimiter A (end of color)
+        }
+
+        if (changes_made_for_previous_row)
+            ss << '\x12'; // Delimiter B (end of row)
 
         // Cache the output
         cached_output = ss.str();
