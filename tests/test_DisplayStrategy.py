@@ -2,6 +2,7 @@ import pytest
 import numpy as np
 import random
 import time
+import cv2
 from Helpers.GeneralHelpers import *
 from libs.DisplayStrategies.AdvancedDisplayStrategy import *
 from libs.CtypesLibs.CPPFrameToString import FrameToString
@@ -103,7 +104,7 @@ def test_update_canvas_1(advanced_display_strategy: AdvancedDisplayStrategy):
     # no
     message += delim_b
 
-    advanced_display_strategy.update_canvas(message=message)
+    update_canvas(message=message, canvas=advanced_display_strategy.canvas, offset=OFFSET)
     advanced_display_strategy.display()
     return
 
@@ -157,7 +158,7 @@ def test_update_canvas_2(advanced_display_strategy: AdvancedDisplayStrategy):
         message += delim_b
 
     # Update and display canvas
-    advanced_display_strategy.update_canvas(message=message)
+    update_canvas(message=message, canvas=None, offset=OFFSET)
     advanced_display_strategy.display()
     time.sleep(3)
     return
@@ -165,11 +166,31 @@ def test_update_canvas_2(advanced_display_strategy: AdvancedDisplayStrategy):
 
 
 def test_update_canvas_from_cpp(frame_to_string: FrameToString, advanced_display_strategy: AdvancedDisplayStrategy):
-    current_state = np.random.randint(0, 256, (240, 256, 3), dtype=np.uint8)
-    last_state = np.random.randint(0, 256, (240, 256, 3), dtype=np.uint8)
+    # Initialize the arrays to be all the same color, say, bright red.
+    last_state = np.full((250, 250, 3), [0, 0, 0], dtype=np.uint8)  # BGR format
+    current_state = np.copy(last_state)
+
+    # Modify the specified regions
+    # Blue color (pixels in rows 10-49 and columns 100-149)
+    current_state[10:50, 100:150] = [255, 0, 0]
+    # Green color (pixels in rows 100-149 and columns 50-99)
+    current_state[100:150, 50:100] = [0, 255, 0]
+
+    # Since the last state, we added colors, which are in the current state.
+
+    cv2.imshow("current_state", current_state)
+    current_state_constructed_by_message = last_state
+
     message = frame_to_string.get_string(current_state, last_state)
     message_len = len(message)
-    result_dict = message_to_color_dictionary(message=message, offset=16)
+    #result_dict = message_to_color_dictionary(message=message, offset=16)
+
+    advanced_display_strategy.update_canvas(message=message,
+                                            canvas=current_state_constructed_by_message)
+    cv2.imshow("Current state constructed by message", current_state_constructed_by_message)
+
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
     return
 
 
