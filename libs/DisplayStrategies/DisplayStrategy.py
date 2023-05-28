@@ -31,10 +31,14 @@ def utf8_to_rgb(utf8_char: str, offset=0):
     return (r, g, b)
 
 def update_canvas(message: str, canvas: np.ndarray, offset: int):
+    height = canvas.shape[0]
+    width = canvas.shape[1]
+
     i = 0
     message_len = len(message)
     while i < len(message):
         row = ord(message[i]) - offset  # Get the row index
+        canvas_row = canvas[row]
         i += 1
         color = utf8_to_rgb(message[i], offset=offset)  # Convert the UTF-8 character to RGB
         i += 1

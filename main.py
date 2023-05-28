@@ -94,6 +94,10 @@ class NESGameServer:
             self.last_render_time = time.time()
 
             state, _, done, _ = self.emulator.step(action=self.controller.current_action)
+            # ndarray w/ shape (240, 256, 3)
+            # This means a width of 256, height of 240, and 3 color channels. So 256x240x3 for widthXheightXchannels.
+            # This is the correct, standard NES resolution: 256x240.
+            # The ndarray shape can seem confusing, but think of it as 240 rows and 256 columns.
 
             if self.SCALE_PERCENTAGE < 100:
                 state = cv2.resize(state, (self.new_frame_height, self.new_frame_width), interpolation=self.SCALE_INTERPOLATION_METHOD)

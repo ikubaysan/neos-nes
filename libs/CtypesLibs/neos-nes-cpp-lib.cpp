@@ -202,7 +202,10 @@ extern "C"
                 }
                 changes_made_for_previous_row = false;
                 ongoing_range = false;
+                std::cout << "i_since_last_row: " << i_since_last_row << std::endl;
+                i_since_last_row = 0;
             }
+            i_since_last_row++;
             
 
             // Only want ranges of changed pixels.
