@@ -21,7 +21,7 @@ def rgb_to_utf8(r: int, g: int, b: int, offset=0):
     rgb_int += offset
     return chr(rgb_int)
 
-def utf8_to_rgb(utf8_char: str, offset=0):
+def utf8_to_rgb(utf8_char: str, offset=0) -> tuple:
     """Converts a UTF-8 character to an RGB tuple"""
     rgb_int = ord(utf8_char)
     rgb_int -= offset
@@ -53,28 +53,17 @@ def update_canvas(message: str, canvas: np.ndarray, offset: int):
                     # Otherwise, the next character represents a new color.
                     color = utf8_to_rgb(message[i], offset=offset)  # Convert the UTF-8 character to RGB
                     i += 1
-
             while i + 1 < len(message) and message[i] != '\x11':  # Check for delimiters A and B
                 start = ord(message[i]) - offset  # Get the start index of the range
                 i += 1
                 range_length = ord(message[i]) - offset  # Get the length of the range
-                #for j in range(start, start + range_length):
                 for j in range(start, start + range_length):
-                    # While the intuitive access might be self.canvas[row][j], we are using self.canvas[j][row] because
-                    # in our case, the j refers to the column of the canvas and row refers to the row.
-                    #try:
-                    #canvas[j][row] = color  # Update the canvas with the color for each index in the range
-
-                    # if row >= len(canvas):
-                    #     print(f"Row too big: {row}")
-                    #     break
-                    # if j >= len(canvas[row]):
-                    #     print(f"j too big: {j}")
-                    #     break
-                    #canvas[row][j] = color
-                    canvas[row][j] = color
-                    # except IndexError:
-                    #     print(f"IndexError at j={j}, row={row}. Canvas dimensions are {len(self.canvas)} by {len(self.canvas[0])}")
+                    try:
+                        canvas[row][j] = color
+                    except:
+                        print("error!!!!\n")
+                        print(message)
+                        time.sleep(10000)
                 i += 1
         i += 1
     return
