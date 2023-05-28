@@ -24,25 +24,25 @@ def test_update_canvas_1(advanced_display_strategy: AdvancedDisplayStrategy):
     # row 0
     message += chr(0 + OFFSET)
     # color 0
-    message += rgb_to_utf32(r=12, g=5, b=50)
+    message += rgb_to_utf32(r=12, g=5, b=50, offset=OFFSET)
 
     # range 0 column start
     message += chr(3 + OFFSET)
     # range 0 span
-    message += chr(5 + OFFSET)
+    message += chr(2 + OFFSET)
 
     # range 1 column start
     message += chr(13 + OFFSET)
     # range 1 span
-    message += chr(5 + OFFSET)
+    message += chr(4 + OFFSET)
 
-    # delim a
+    # delim a <?>
     message += delim_a
 
     # Done applying color 0 to this row. Are there any other colors?
     # yes.
     # color 1
-    message += rgb_to_utf32(r=120, g=50, b=250)
+    message += rgb_to_utf32(r=120, g=50, b=250, offset=OFFSET)
     # range 0 column start
     message += chr(23 + OFFSET)
     # range 0 span
@@ -51,7 +51,7 @@ def test_update_canvas_1(advanced_display_strategy: AdvancedDisplayStrategy):
     # range 1 column start
     message += chr(33 + OFFSET)
     # range 1 span
-    message += chr(5 + OFFSET)
+    message += chr(2 + OFFSET)
 
     message += delim_a
     # Done applying color 0 to this row. Are there any other colors?
@@ -72,12 +72,15 @@ def test_update_canvas_2(advanced_display_strategy: AdvancedDisplayStrategy):
     delim_b = chr(2)  # end of row
     message = ""
 
+    data = {}
+
     for row in range(FRAME_HEIGHT):
         # Append row
         message += chr(row + OFFSET)
 
         # Randomly select the number of colors for this row
-        num_colors = random.randint(1, 5)
+        num_colors = random.randint(1, 3)
+        data[row] = num_colors
 
         for _ in range(num_colors):
             # Randomly select RGB values
@@ -86,17 +89,17 @@ def test_update_canvas_2(advanced_display_strategy: AdvancedDisplayStrategy):
             b = random.randint(0, 255)
 
             # Append color
-            message += rgb_to_utf32(r, g, b)
+            message += rgb_to_utf32(r, g, b, offset=OFFSET)
 
             # Randomly select the number of color ranges for this color
-            num_ranges = random.randint(1, 5)
+            num_ranges = random.randint(1, 3)
 
             for _ in range(num_ranges):
                 # Randomly select start of color range
-                start = random.randint(0, FRAME_WIDTH - 1)
+                start = random.randint(0, FRAME_WIDTH - 2)
 
                 # Randomly select range span. It must not exceed the amount of columns from the start
-                span = random.randint(1, FRAME_WIDTH - start)
+                span = random.randint(1, FRAME_WIDTH - start - 1)
 
                 # Append range start and span
                 message += chr(start + OFFSET)
@@ -109,10 +112,9 @@ def test_update_canvas_2(advanced_display_strategy: AdvancedDisplayStrategy):
         message += delim_b
 
     # Update and display canvas
-    print(message)
     advanced_display_strategy.update_canvas(message=message)
     advanced_display_strategy.display()
-    time.sleep(5)
+    time.sleep(3)
     return
 
 

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from Helpers.GeneralHelpers import *
 
-def rgb_to_utf32(r: int, g: int, b: int):
+def rgb_to_utf32(r: int, g: int, b: int, offset=0):
     """Takes an RGB tuple and converts it into a single UTF-32 character"""
     r >>= 2
     g >>= 2
@@ -14,6 +14,8 @@ def rgb_to_utf32(r: int, g: int, b: int):
             rgb_int = 0xD7FF  # Maximum value just before the surrogate range
         else:
             rgb_int = 0xE000  # Minimum value just after the surrogate range
+    # TODO: having this here might not be right due to above ifs.
+    rgb_int += offset
     return chr(rgb_int)
 
 def utf32_to_rgb(utf32_char: str, offset=0):
@@ -43,11 +45,16 @@ class DisplayStrategy(ABC):
         pass
 
     def show_frame(self, window_name: str):
+        # Display the image represented by self.canvas in a window with the specified window_name
         cv2.imshow(window_name, self.canvas)
+
+        # Wait for a key press event and check if the pressed key is 'q'
         if cv2.waitKey(1) & 0xFF == ord('q'):
+            # If 'q' key is pressed, close all OpenCV windows
             cv2.destroyAllWindows()
-            return False
-        return True
+            return False  # Return False to indicate program should exit
+
+        return True  # Return True to indicate program should continue
 
     async def receive_frames(self):
         uri = f"ws://{self.host}:{self.port}"
@@ -62,7 +69,8 @@ class DisplayStrategy(ABC):
                         print(message)
                         message_bytes = len(message.encode('utf-8'))
                         logger.info(f"Received message with {message_bytes} bytes, {len(message)} chars.")
-                        if not self.display(message):
+                        self.update_canvas(message)
+                        if not self.display():
                             break
             except Exception as e:
                 logger.error(f"Error: {e}", exc_info=True)
