@@ -32,6 +32,7 @@ def utf8_to_rgb(utf8_char: str, offset=0):
 
 def update_canvas(message: str, canvas: np.ndarray, offset: int):
     i = 0
+    message_len = len(message)
     while i < len(message):
         row = ord(message[i]) - offset  # Get the row index
         i += 1
@@ -67,7 +68,6 @@ def update_canvas(message: str, canvas: np.ndarray, offset: int):
                     #     print(f"j too big: {j}")
                     #     break
                     canvas[row][j] = color
-
                     # except IndexError:
                     #     print(f"IndexError at j={j}, row={row}. Canvas dimensions are {len(self.canvas)} by {len(self.canvas[0])}")
                 i += 1
