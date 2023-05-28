@@ -32,6 +32,8 @@ def message_to_color_dictionary(message, offset):
     i = 0  # Initialize index for looping through the message
 
     while i < len(message):
+
+        # this is affected by current_state[10:50, 100:150], will start at 10 in this case
         row_idx = ord(message[i]) - offset
         i += 1
 
@@ -158,7 +160,7 @@ def test_update_canvas_2(advanced_display_strategy: AdvancedDisplayStrategy):
         message += delim_b
 
     # Update and display canvas
-    update_canvas(message=message, canvas=None, offset=OFFSET)
+    advanced_display_strategy.update_canvas(message=message)
     advanced_display_strategy.display()
     time.sleep(3)
     return
@@ -170,11 +172,29 @@ def test_update_canvas_from_cpp(frame_to_string: FrameToString, advanced_display
     last_state = np.full((250, 250, 3), [0, 0, 0], dtype=np.uint8)  # BGR format
     current_state = np.copy(last_state)
 
+    # # Modify the specified regions
+    # # Blue color (pixels in rows 10-49 and columns 100-149)
+    # current_state[10:50, 100:150] = [255, 0, 0]
+    # # Green color (pixels in rows 100-149 and columns 50-99)
+    # current_state[100:150, 50:100] = [0, 255, 0]
+
     # Modify the specified regions
     # Blue color (pixels in rows 10-49 and columns 100-149)
-    current_state[10:50, 100:150] = [255, 0, 0]
+
+
+    # The color is not affecting color_codepoint.
+    # message[0] is correct and is a row index, but message[1] is supposed to be a color and is not.
+    current_state[10:50, 100:150] = [94, 13, 73]
+
+
+    #current_state[10:50, 100:150] = [14, 13, 33]
+
+
     # Green color (pixels in rows 100-149 and columns 50-99)
-    current_state[100:150, 50:100] = [0, 255, 0]
+    current_state[100:150, 50:100] = [23, 37, 201]
+
+    # Green color (pixels in rows 100-149 and columns 50-99)
+    current_state[200:250, 50:100] = [19, 120, 9]
 
     # Since the last state, we added colors, which are in the current state.
 
@@ -182,8 +202,11 @@ def test_update_canvas_from_cpp(frame_to_string: FrameToString, advanced_display
     current_state_constructed_by_message = last_state
 
     message = frame_to_string.get_string(current_state, last_state)
+
+    message_to_codepoints = [(ord(utf8char) - advanced_display_strategy.OFFSET) for utf8char in message]
+
     message_len = len(message)
-    #result_dict = message_to_color_dictionary(message=message, offset=16)
+    result_dict = message_to_color_dictionary(message=message, offset=16)
 
     advanced_display_strategy.update_canvas(message=message,
                                             canvas=current_state_constructed_by_message)

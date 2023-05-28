@@ -30,7 +30,7 @@ def utf8_to_rgb(utf8_char: str, offset=0):
     b = (rgb_int & 0x3F) << 2
     return (r, g, b)
 
-def update_canvas(message: str, canvas: Union[np.ndarray, None], offset: int):
+def update_canvas(message: str, canvas: np.ndarray, offset: int):
     i = 0
     while i < len(message):
         row = ord(message[i]) - offset  # Get the row index
