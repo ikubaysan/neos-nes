@@ -29,10 +29,14 @@ class AdvancedDisplayStrategy(DisplayStrategy):
                     start = ord(message[i]) - self.OFFSET  # Get the start index of the range
                     i += 1
                     range_length = ord(message[i]) - self.OFFSET  # Get the length of the range
-                    for j in range(start, start + range_length + 1):
+                    #for j in range(start, start + range_length):
+                    for j in range(start, start + range_length):
                         # While the intuitive access might be self.canvas[row][j], we are using self.canvas[j][row] because
                         # in our case, the j refers to the column of the canvas and row refers to the row.
+                        #try:
                         self.canvas[j][row] = color  # Update the canvas with the color for each index in the range
+                        # except IndexError:
+                        #     print(f"IndexError at j={j}, row={row}. Canvas dimensions are {len(self.canvas)} by {len(self.canvas[0])}")
                     i += 1
             i += 1
         return

@@ -1,4 +1,5 @@
 #include <string>
+#include <vector>
 #include <cstring>
 #include <sstream>
 #include <iostream>
@@ -86,141 +87,138 @@ extern "C"
         return color;
     }
 
-    void frame_to_string(Array3D *current_frame, Array3D *last_frame, char *output)
+    void frame_to_string(Array3D *current_frame, Array3D *previous_frame, char *output)
     {
         /*
-        frame->shape[0] = width
-        frame->shape[1] = height
-        frame->shape[2] = RGB channels
+            frame->shape[0] = width
+            frame->shape[1] = height
+            frame->shape[2] = RGB channels
         */
 
-        // Cached variables to optimize repeated calls with the same last_frame
-        static Array3D *cached_last_frame = nullptr;
+        // std::cout << "width: " << current_frame->shape[0] << std::endl;
+        // std::cout << "height: " << current_frame->shape[1] << std::endl;
+        // std::cout << "channels: " << current_frame->shape[2] << std::endl;
+        
+        static Array3D *cached_previous_frame = nullptr;
         static std::string cached_output;
 
-        // If last_frame is the same as the cached_last_frame, return the cached output
-        if (last_frame == cached_last_frame)
+        if (previous_frame == cached_previous_frame)
         {
             std::strncpy(output, cached_output.c_str(), cached_output.size());
             output[cached_output.size()] = '\0';
             return;
         }
 
-        // String stream to build the output message
         std::ostringstream ss;
 
-        std::string last_color = "";
-        int same_color_start = -1;
-        int row_index = 0;
         int total_pixels = current_frame->shape[0] * current_frame->shape[1];
-        bool changed;
-
         unsigned char *current_pixel = current_frame->data;
-        unsigned char *last_pixel = last_frame ? last_frame->data : nullptr;
+        unsigned char *previous_pixel = previous_frame ? previous_frame->data : nullptr;
+        bool changes_made_for_previous_row = false;
 
-        // Iterate over each pixel in the frame
-        // The expression `current_pixel += current_frame->shape[2]` advances the `current_pixel` pointer
-        // to the next pixel in the frame. The `current_frame->shape[2]` gives the size of a single pixel,
-        // so by incrementing the `current_pixel` pointer by that value, we move to the next pixel in the frame.
-        // This allows us to process each pixel in the frame sequentially.
-        // The loop iterates until `i` reaches the `total_pixels` count.
+        // Use a map to store color and its associated ranges
+        std::unordered_map<std::string, std::vector<std::pair<int, int>>> color_ranges_map;
+        std::string current_color;
+
+
+        int i_since_last_row = 0;
+
+        // Iterate over each pixel
         for (int i = 0; i < total_pixels; ++i, current_pixel += current_frame->shape[2])
         {
-            changed = true;
-            if (last_frame)
+            bool changed = true;
+            if (previous_frame)
             {
-                // Compare the current pixel with the corresponding pixel in the last frame
-                changed = memcmp(current_pixel, last_pixel, current_frame->shape[2]) != 0;
-                last_pixel += last_frame->shape[2];
+                changed = memcmp(current_pixel, previous_pixel, current_frame->shape[2]) != 0;
+                previous_pixel += previous_frame->shape[2];
             }
 
+            int row_idx = i / current_frame->shape[0]; // Row index
+            int col_idx = i % current_frame->shape[0]; // Column index
+
+            // std::cout << row_idx << " " << col_idx << std::endl;
+            //  These are correct
+
             // Check for the start of a new row
-            if (i % current_frame->shape[0] == 0 && i > 0)
+            if (col_idx == 0)
             {
-                // Check if there was a continuous range of the same color in the previous row
-                if (same_color_start != -1)
+                
+                // Write the index of the previous row
+                if (!color_ranges_map.empty())
                 {
-                    // Encode the start and length of the range as UTF-8 characters and append to the string stream
-                    if (i - same_color_start > 1)
-                    {
-                        ss << encode_utf8(same_color_start) << encode_utf8(i - same_color_start - 1);
-                    }
-                    else
-                    {
-                        ss << encode_utf8(same_color_start);
-                    }
-                    ss << '\x01'; // add delimiter A (end of color)
+                    ss << encode_utf8(row_idx - 1);
+                    changes_made_for_previous_row = true;
                 }
-                ss << '\x02'; // add delimiter B (end of row)
-                ss << encode_utf8(row_index);
-                row_index++;
-                same_color_start = -1;
+
+                // Write out the color and its ranges for the previous row
+                for (auto &color_ranges : color_ranges_map)
+                {
+                    ss << color_ranges.first;
+                    for (auto &range : color_ranges.second)
+                    {
+                        // std::cout << range.first << " " << range.second << std::endl;
+                        //  These are correct
+                        ss << encode_utf8(range.first) << encode_utf8(range.second);
+                    }
+                    ss << '\x01'; // Delimiter A (end of color)
+                }
+
+                // Clear color_ranges_map
+                color_ranges_map.clear();
+
+                if (changes_made_for_previous_row)
+                {
+                    ss << '\x02'; // Delimiter B (end of row)
+                }
+                changes_made_for_previous_row = false;
+
+                // std::cout << "i_since_last_row: " << i_since_last_row << std::endl;
+                // i_since_last_row = 0;
             }
+
+            //i_since_last_row++;
 
             if (changed)
             {
-                // Extract the RGB values from the current pixel
+                // Get color code
                 int r = current_pixel[0] >> 2;
                 int g = current_pixel[1] >> 2;
                 int b = current_pixel[2] >> 2;
                 int rgb_int = b << 10 | g << 5 | r;
-                rgb_int += OFFSET; // Add the offset here
+                std::string color = encode_utf8(rgb_int);
 
-                // Check if the RGB to UTF-8 conversion is already cached
-                if (rgb_to_utf8_cache.count(rgb_int) == 0)
-                {
-                    rgb_to_utf8_cache[rgb_int] = encode_utf8(rgb_int);
-                }
-
-                // Check if the current color is the same as the previous color
-                if (last_color == rgb_to_utf8_cache[rgb_int] && same_color_start != -1)
-                {
-                    continue;
-                }
-
-                // If there was a continuous range of the same color, encode it and append to the string stream
-                if (same_color_start != -1)
-                {
-                    if (i - same_color_start > 1)
-                    {
-                        ss << encode_utf8(same_color_start) << encode_utf8(i - same_color_start - 1);
-                    }
-                    else
-                    {
-                        ss << encode_utf8(same_color_start);
-                    }
-                    ss << '\x01'; // add delimiter A (end of color)
-                }
-
-                same_color_start = i;
-                last_color = rgb_to_utf8_cache[rgb_int];
-                ss << last_color;
+                // Start a new range
+                color_ranges_map[color].push_back({col_idx, 1});
+                // std::cout << col_idx << std::endl;
+                current_color = color;
+            }
+            else if (color_ranges_map.find(current_color) != color_ranges_map.end())
+            {
+                // Extend the previous range
+                color_ranges_map[current_color].back().second++;
             }
         }
 
-        // Check if there was a continuous range of the same color in the last row
-        if (same_color_start != -1)
-        {
-            if (total_pixels - same_color_start > 1)
-            {
-                ss << encode_utf8(same_color_start) << encode_utf8(total_pixels - same_color_start - 1);
-            }
-            else
-            {
-                ss << encode_utf8(same_color_start);
-            }
-            ss << '\x01'; // add delimiter A (end of color)
-        }
-        ss << '\x02'; // add delimiter B (end of row)
+        // // Write out the color and its ranges for the final row
+        // for (auto &color_ranges : color_ranges_map)
+        // {
+        //     ss << color_ranges.first;
+        //     for (auto &range : color_ranges.second)
+        //     {
+        //         ss << encode_utf8(range.first) << encode_utf8(range.second);
+        //     }
+        //     ss << '\x01'; // Delimiter A (end of color)
+        //     changes_made_for_previous_row = true;
+        // }
 
-        // Cache the output and copy it to the provided output buffer
+        // if (changes_made_for_previous_row)
+        //     ss << '\x02'; // Delimiter B (end of row)
+
+        // Cache the output
         cached_output = ss.str();
         std::strncpy(output, cached_output.c_str(), cached_output.size());
         output[cached_output.size()] = '\0';
 
-        // Update the cached last_frame
-        cached_last_frame = last_frame;
-
-        std::cout << "Shape[0] " << current_frame->shape[0] << " Shape[1] " << current_frame->shape[1] << " Shape[2] " << current_frame->shape[2] << std::endl;
+        cached_previous_frame = previous_frame;
     }
 }
