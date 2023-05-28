@@ -2,7 +2,7 @@ from Helpers.GeneralHelpers import *
 from libs.DisplayStrategies.DisplayStrategy import *
 
 class AdvancedDisplayStrategy(DisplayStrategy):
-    OFFSET = 2
+    OFFSET = 3
     def __init__(self, host: str, port: int, scale_percentage: int):
         super().__init__(host=host, port=port, scale_percentage=scale_percentage)
 
@@ -36,7 +36,6 @@ class AdvancedDisplayStrategy(DisplayStrategy):
                     i += 1
             i += 1
         return
-
 
 
     def display(self):
