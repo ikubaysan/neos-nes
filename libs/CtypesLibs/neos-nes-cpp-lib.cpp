@@ -88,6 +88,12 @@ extern "C"
 
     void frame_to_string(Array3D *current_frame, Array3D *last_frame, char *output)
     {
+        /*
+        frame->shape[0] = width
+        frame->shape[1] = height
+        frame->shape[2] = RGB channels
+        */
+
         // Cached variables to optimize repeated calls with the same last_frame
         static Array3D *cached_last_frame = nullptr;
         static std::string cached_output;
@@ -112,6 +118,12 @@ extern "C"
         unsigned char *current_pixel = current_frame->data;
         unsigned char *last_pixel = last_frame ? last_frame->data : nullptr;
 
+        // Iterate over each pixel in the frame
+        // The expression `current_pixel += current_frame->shape[2]` advances the `current_pixel` pointer
+        // to the next pixel in the frame. The `current_frame->shape[2]` gives the size of a single pixel,
+        // so by incrementing the `current_pixel` pointer by that value, we move to the next pixel in the frame.
+        // This allows us to process each pixel in the frame sequentially.
+        // The loop iterates until `i` reaches the `total_pixels` count.
         for (int i = 0; i < total_pixels; ++i, current_pixel += current_frame->shape[2])
         {
             changed = true;
@@ -123,7 +135,7 @@ extern "C"
             }
 
             // Check for the start of a new row
-            if (i % current_frame->shape[1] == 0 && i > 0)
+            if (i % current_frame->shape[0] == 0 && i > 0)
             {
                 // Check if there was a continuous range of the same color in the previous row
                 if (same_color_start != -1)
@@ -139,13 +151,7 @@ extern "C"
                     }
                     ss << '\x01'; // add delimiter A (end of color)
                 }
-
-                // Check if this is not the first row (no need to start with a row delimiter)
-                if (row_index != 0)
-                {
-                    ss << '\x02'; // add delimiter B (end of row)
-                }
-
+                ss << '\x02'; // add delimiter B (end of row)
                 ss << encode_utf8(row_index);
                 row_index++;
                 same_color_start = -1;
@@ -214,5 +220,7 @@ extern "C"
 
         // Update the cached last_frame
         cached_last_frame = last_frame;
+
+        std::cout << "Shape[0] " << current_frame->shape[0] << " Shape[1] " << current_frame->shape[1] << " Shape[2] " << current_frame->shape[2] << std::endl;
     }
 }
