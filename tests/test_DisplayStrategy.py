@@ -169,7 +169,7 @@ def test_update_canvas_2(advanced_display_strategy: AdvancedDisplayStrategy):
 
 def test_update_canvas_from_cpp(frame_to_string: FrameToString, advanced_display_strategy: AdvancedDisplayStrategy):
     # Initialize the arrays to be all the same color, say, bright red.
-    last_state = np.full((250, 250, 3), [0, 0, 0], dtype=np.uint8)  # Initialize last_state with black color
+    last_state = np.full((250, 350, 3), [0, 0, 0], dtype=np.uint8)  # Initialize last_state with black color
 
     current_state = np.copy(last_state)  # Create a copy of last_state as current_state
 

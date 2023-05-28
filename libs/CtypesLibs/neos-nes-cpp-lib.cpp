@@ -94,10 +94,10 @@ extern "C"
             frame->shape[2] = RGB channels
         */
 
-        // std::cout << "width: " << current_frame->shape[0] << std::endl;
-        // std::cout << "height: " << current_frame->shape[1] << std::endl;
-        // std::cout << "channels: " << current_frame->shape[2] << std::endl;   
-        //std::cout << "hello!!!" << std::endl;     
+        // std::cout << "width: " << current_frame->shape[1] << std::endl;
+        // std::cout << "height: " << current_frame->shape[0] << std::endl;
+        // std::cout << "channels: " << current_frame->shape[2] << std::endl;
+        // std::cout << "hello!!!" << std::endl;
         static Array3D *cached_previous_frame = nullptr;
         static std::string cached_output;
 
@@ -134,8 +134,10 @@ extern "C"
                 previous_pixel += previous_frame->shape[2];
             }
 
-            int row_idx = i / current_frame->shape[0]; // Row index
-            int col_idx = i % current_frame->shape[0]; // Column index
+            int row_idx = i / current_frame->shape[1]; // Row index
+            int col_idx = i % current_frame->shape[1]; // Column index
+
+            //if (first_row) std::cout << "Row: " << row_idx << "Column:" << col_idx << std::endl;
 
             // std::cout << row_idx << " " << col_idx << std::endl;
             //  These are correct
@@ -149,8 +151,7 @@ extern "C"
                 {
                     ss << encode_utf8(row_idx - 1);
                     changes_made_for_previous_row = true;
-                    if (first_row) {std::cout << "Row: " << row_idx - 1 << std::endl;}
-
+                    //if (first_row) {std::cout << "Row: " << row_idx - 1 << std::endl;}
 
                     // Print the contents of color_ranges_map
                     // if (first_row)
@@ -170,23 +171,22 @@ extern "C"
                     // }
                 }
 
-
                 // Write out the color and its ranges for the previous row
                 for (auto &color_ranges : color_ranges_map)
                 {
                     ss << color_ranges.first;
                     if (first_row && !color_ranges_map.empty())
                     {
-                        std::cout << color_ranges.first << std::endl;
+                        //std::cout << color_ranges.first << std::endl;
                     }
                     for (auto &range : color_ranges.second)
                     {
                         // std::cout << range.first << " " << range.second << std::endl;
-                        //  These are correct
+                        //   These are correct
                         ss << encode_utf8(range.first) << encode_utf8(range.second);
                         if (first_row && !color_ranges_map.empty())
                         {
-                            std::cout << color_ranges.first << " " << range.first << " " << range.second << std::endl;
+                            //std::cout << color_ranges.first << " " << range.first << " " << range.second << std::endl;
                         }
                     }
                     ss << '\x11'; // Delimiter A (end of color)
@@ -202,7 +202,7 @@ extern "C"
                 }
                 changes_made_for_previous_row = false;
                 ongoing_range = false;
-                std::cout << "i_since_last_row: " << i_since_last_row << std::endl;
+                //std::cout << "i_since_last_row: " << i_since_last_row << std::endl;
                 i_since_last_row = 0;
             }
             i_since_last_row++;

@@ -71,6 +71,7 @@ def update_canvas(message: str, canvas: np.ndarray, offset: int):
                     # if j >= len(canvas[row]):
                     #     print(f"j too big: {j}")
                     #     break
+                    #canvas[row][j] = color
                     canvas[row][j] = color
                     # except IndexError:
                     #     print(f"IndexError at j={j}, row={row}. Canvas dimensions are {len(self.canvas)} by {len(self.canvas[0])}")
