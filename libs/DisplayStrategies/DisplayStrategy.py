@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from Helpers.GeneralHelpers import *
 
-def rgb_to_utf32(r: int, g: int, b: int, offset=0):
-    """Takes an RGB tuple and converts it into a single UTF-32 character"""
+def rgb_to_utf8(r: int, g: int, b: int, offset=0):
+    """Takes an RGB tuple and converts it into a single UTF-8 character"""
     r >>= 2
     g >>= 2
     b >>= 2
@@ -18,9 +18,9 @@ def rgb_to_utf32(r: int, g: int, b: int, offset=0):
     rgb_int += offset
     return chr(rgb_int)
 
-def utf32_to_rgb(utf32_char: str, offset=0):
-    """Converts a UTF-32 character to an RGB tuple"""
-    rgb_int = ord(utf32_char)
+def utf8_to_rgb(utf8_char: str, offset=0):
+    """Converts a UTF-8 character to an RGB tuple"""
+    rgb_int = ord(utf8_char)
     rgb_int -= offset
     r = (rgb_int>>10 & 0x3F) << 2
     g = (rgb_int>>5 & 0x3F) << 2
@@ -64,7 +64,7 @@ class DisplayStrategy(ABC):
                 async with websockets.connect(uri, max_size=1024 * 1024 * 10) as websocket:
                     while True:
                         message = await websocket.recv()
-                        # Encoding as UTF-8, but in Logix we will decode the RGB character as UTF-32.
+                        # Encoding as UTF-8, but in Logix we will decode the RGB character as UTF-8.
                         # This still works because the unicode code points are identical for both.
                         print(message)
                         message_bytes = len(message.encode('utf-8'))

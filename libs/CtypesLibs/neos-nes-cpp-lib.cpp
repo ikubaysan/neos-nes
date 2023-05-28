@@ -20,19 +20,17 @@ extern "C"
     } BoolArray;
 
     std::unordered_map<int, std::string> rgb_to_utf8_cache;
+    const int OFFSET = 2;
 
     std::string encode_utf8(int unicode)
     {
         std::string color;
         if (unicode == 0)
         {
-            // Replace null terminate symbol with a different unicode character
-            // Will need to change this when I use offset
             color.push_back(0x1);
         }
         else
         {
-            // Handle surrogate pairs
             if (0xD800 <= unicode && unicode <= 0xDFFF)
             {
                 if (unicode < 0xDC00)
@@ -67,7 +65,6 @@ extern "C"
         return color;
     }
 
-    // Function to convert the array of pixels to a string representation
     void frame_to_string(Array3D *current_frame, Array3D *last_frame, char *output)
     {
         static Array3D *cached_last_frame = nullptr;
@@ -110,49 +107,51 @@ extern "C"
                 int g = current_pixel[1] >> 2;
                 int b = current_pixel[2] >> 2;
                 int rgb_int = b << 10 | g << 5 | r;
+                rgb_int += OFFSET;
 
-                auto cached = rgb_to_utf8_cache.find(rgb_int);
-                std::string color;
-                if (cached != rgb_to_utf8_cache.end())
+                if (rgb_to_utf8_cache.count(rgb_int) == 0)
                 {
-                    color = cached->second;
-                }
-                else
-                {
-                    color = encode_utf8(rgb_int);
-                    rgb_to_utf8_cache[rgb_int] = color;
+                    rgb_to_utf8_cache[rgb_int] = encode_utf8(rgb_int);
                 }
 
-                if (color != last_color)
+                if (last_color == rgb_to_utf8_cache[rgb_int] && same_color_start != -1)
                 {
-                    if (!last_color.empty() && same_color_start != -1)
+                    continue;
+                }
+
+                if (same_color_start != -1)
+                {
+                    if (i - same_color_start > 1)
                     {
-                        ss << encode_utf8(same_color_start) << encode_utf8(i % current_frame->shape[1] - same_color_start - 1) << encode_utf8(1);
+                        ss << encode_utf8(same_color_start) << encode_utf8(i - same_color_start - 1);
                     }
-                    same_color_start = i % current_frame->shape[1];
-                    last_color = color;
+                    else
+                    {
+                        ss << encode_utf8(same_color_start);
+                    }
                 }
-            }
-            else if (same_color_start != -1 && !changed)
-            {
-                ss << encode_utf8(same_color_start) << encode_utf8(i % current_frame->shape[1] - same_color_start - 1) << encode_utf8(1);
-                same_color_start = -1;
-                last_color = "";
-            }
 
-            if (i % current_frame->shape[1] == current_frame->shape[1] - 1 && same_color_start != -1)
+                same_color_start = i;
+                last_color = rgb_to_utf8_cache[rgb_int];
+                ss << last_color;
+            }
+        }
+
+        if (same_color_start != -1)
+        {
+            if (total_pixels - same_color_start > 1)
             {
-                int row = i / current_frame->shape[1];
-                ss << encode_utf8(same_color_start) << encode_utf8(i % current_frame->shape[1] - same_color_start) << encode_utf8(1);
-                same_color_start = -1;
-                last_color = "";
-                ss << encode_utf8(2);
+                ss << encode_utf8(same_color_start) << encode_utf8(total_pixels - same_color_start - 1);
+            }
+            else
+            {
+                ss << encode_utf8(same_color_start);
             }
         }
 
         cached_output = ss.str();
-        cached_last_frame = last_frame;
         std::strncpy(output, cached_output.c_str(), cached_output.size());
         output[cached_output.size()] = '\0';
+        cached_last_frame = last_frame;
     }
 }

@@ -29,16 +29,16 @@ async def handle_connection(websocket, path):
         logger.info(f"Chosen RGB: {r}, {g}, {b}")
 
         # Convert RGB values to Unicode format
-        message = rgb_to_utf32(r, g, b)
+        message = rgb_to_utf8(r, g, b)
 
         longer_message = "prefix_" + message + "_suffix"
         await send_message(websocket, longer_message)
-        # Encoding as UTF-8, but in Logix we will decode the RGB character as UTF-32.
+        # Encoding as UTF-8, but in Logix we will decode the RGB character as UTF-8.
         # This still works because the unicode code points are identical for both.
         logger.info(f"Sent random RGB message: {longer_message} (Bytes: {len(longer_message.encode('utf-8'))})")
 
         # Decode the message back into RGB values and log them
-        r_decoded, g_decoded, b_decoded = utf32_to_rgb(message)
+        r_decoded, g_decoded, b_decoded = utf8_to_rgb(message)
         logger.info(f"Decoded RGB values: ({r_decoded}, {g_decoded}, {b_decoded})")
 
         await asyncio.sleep(1)

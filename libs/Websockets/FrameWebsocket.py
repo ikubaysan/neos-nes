@@ -1,5 +1,5 @@
 from libs.Websockets.BaseWebsocket import *
-from libs.CtypesLibs.cpp_frame_to_string import FrameToString
+from libs.CtypesLibs.CPPFrameToString import FrameToString
 
 logger = logging.getLogger(__name__)
 

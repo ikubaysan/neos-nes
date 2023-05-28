@@ -24,7 +24,7 @@ def test_update_canvas_1(advanced_display_strategy: AdvancedDisplayStrategy):
     # row 0
     message += chr(0 + OFFSET)
     # color 0
-    message += rgb_to_utf32(r=12, g=5, b=50, offset=OFFSET)
+    message += rgb_to_utf8(r=12, g=5, b=50, offset=OFFSET)
 
     # range 0 column start
     message += chr(3 + OFFSET)
@@ -42,7 +42,7 @@ def test_update_canvas_1(advanced_display_strategy: AdvancedDisplayStrategy):
     # Done applying color 0 to this row. Are there any other colors?
     # yes.
     # color 1
-    message += rgb_to_utf32(r=120, g=50, b=250, offset=OFFSET)
+    message += rgb_to_utf8(r=120, g=50, b=250, offset=OFFSET)
     # range 0 column start
     message += chr(23 + OFFSET)
     # range 0 span
@@ -89,7 +89,7 @@ def test_update_canvas_2(advanced_display_strategy: AdvancedDisplayStrategy):
             b = random.randint(0, 255)
 
             # Append color
-            message += rgb_to_utf32(r, g, b, offset=OFFSET)
+            message += rgb_to_utf8(r, g, b, offset=OFFSET)
 
             # Randomly select the number of color ranges for this color
             num_ranges = random.randint(1, 3)
@@ -118,46 +118,46 @@ def test_update_canvas_2(advanced_display_strategy: AdvancedDisplayStrategy):
     return
 
 
-def test_rgb_utf32_conversion():
+def test_rgb_utf8_conversion():
     # Test case 1: Red color
     r = 255
     g = 0
     b = 0
-    utf32_char = rgb_to_utf32(r, g, b)
-    rgb_tuple = utf32_to_rgb(utf32_char)
+    utf8_char = rgb_to_utf8(r, g, b)
+    rgb_tuple = utf8_to_rgb(utf8_char)
 
     # Test case 2: Green color
     r = 0
     g = 255
     b = 0
-    utf32_char = rgb_to_utf32(r, g, b)
-    rgb_tuple = utf32_to_rgb(utf32_char)
+    utf8_char = rgb_to_utf8(r, g, b)
+    rgb_tuple = utf8_to_rgb(utf8_char)
 
     # Test case 3: Blue color
     r = 0
     g = 0
     b = 255
-    utf32_char = rgb_to_utf32(r, g, b)
-    rgb_tuple = utf32_to_rgb(utf32_char)
+    utf8_char = rgb_to_utf8(r, g, b)
+    rgb_tuple = utf8_to_rgb(utf8_char)
 
 
     # Test case 4: Custom color
     r = 128
     g = 64
     b = 192
-    utf32_char = rgb_to_utf32(r, g, b)
-    rgb_tuple = utf32_to_rgb(utf32_char)
+    utf8_char = rgb_to_utf8(r, g, b)
+    rgb_tuple = utf8_to_rgb(utf8_char)
     return
 
 
-def test_unicode_utf32_conversion():
-    # Convert Unicode codepoint to UTF-32 char
+def test_unicode_utf8_conversion():
+    # Convert Unicode codepoint to UTF-8 char
     codepoint1 = 990
-    utf32_char = chr(codepoint1)
-    print(utf32_char)  # Output: Ϟ
+    utf8_char = chr(codepoint1)
+    print(utf8_char)  # Output: Ϟ
 
-    # Convert UTF-32 char to Unicode codepoint
-    utf32_char = "Ϟ"
-    codepoint2 = ord(utf32_char)
+    # Convert UTF-8 char to Unicode codepoint
+    utf8_char = "Ϟ"
+    codepoint2 = ord(utf8_char)
     print(codepoint2)  # Output: 990
     assert codepoint1 == codepoint2

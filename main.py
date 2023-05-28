@@ -111,15 +111,15 @@ class NESGameServer:
                 state = state.astype('uint8')
 
                 if time.time() - self.last_full_frame_time >= self.full_frame_interval:
-                    utf32_data = self.frame.full_frame_to_string(state)
+                    utf8_data = self.frame.full_frame_to_string(state)
                     self.last_full_frame_time = time.time()
                 else:
-                    utf32_data = self.frame.frame_to_string(state)
+                    utf8_data = self.frame.frame_to_string(state)
 
                 # Put the frame into the queue
                 # Theoretically, if framerate is too high (> 60), the queue could fill up
                 # and frames could be produced faster than we send them.
-                await self.queue.put(utf32_data)
+                await self.queue.put(utf8_data)
                 self.last_frame_publish_time = time.time()
                 self.execution_count_published += 1
 
@@ -135,8 +135,8 @@ class NESGameServer:
 
     async def consume_frames(self):
         while True:
-            utf32_data = await self.queue.get()  # Wait until a frame is available
-            await self.frame.broadcast(utf32_data)  # Send the frame over the websocket
+            utf8_data = await self.queue.get()  # Wait until a frame is available
+            await self.frame.broadcast(utf8_data)  # Send the frame over the websocket
 
 if __name__ == "__main__":
     HOST = '10.0.0.147'

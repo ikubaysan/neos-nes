@@ -11,7 +11,7 @@ class AdvancedDisplayStrategy(DisplayStrategy):
         while i < len(message):
             row = ord(message[i]) - self.OFFSET  # Get the row index
             i += 1
-            color = utf32_to_rgb(message[i], offset=self.OFFSET)  # Convert the UTF-32 character to RGB
+            color = utf8_to_rgb(message[i], offset=self.OFFSET)  # Convert the UTF-8 character to RGB
             i += 1
             while i < len(message):  # Check for delimiter A (end of color)
                 if message[i] == '\x01':
@@ -22,7 +22,7 @@ class AdvancedDisplayStrategy(DisplayStrategy):
                         break
                     else:
                         # Otherwise, the next character represents a new color.
-                        color = utf32_to_rgb(message[i], offset=self.OFFSET)  # Convert the UTF-32 character to RGB
+                        color = utf8_to_rgb(message[i], offset=self.OFFSET)  # Convert the UTF-8 character to RGB
                         i += 1
 
                 while i + 1 < len(message) and message[i] != '\x01':  # Check for delimiters A and B
