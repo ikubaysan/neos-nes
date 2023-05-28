@@ -169,32 +169,17 @@ def test_update_canvas_2(advanced_display_strategy: AdvancedDisplayStrategy):
 
 def test_update_canvas_from_cpp(frame_to_string: FrameToString, advanced_display_strategy: AdvancedDisplayStrategy):
     # Initialize the arrays to be all the same color, say, bright red.
-    last_state = np.full((250, 250, 3), [0, 0, 0], dtype=np.uint8)  # BGR format
-    current_state = np.copy(last_state)
+    last_state = np.full((250, 250, 3), [0, 0, 0], dtype=np.uint8)  # Initialize last_state with black color
 
-    # # Modify the specified regions
-    # # Blue color (pixels in rows 10-49 and columns 100-149)
-    # current_state[10:50, 100:150] = [255, 0, 0]
-    # # Green color (pixels in rows 100-149 and columns 50-99)
-    # current_state[100:150, 50:100] = [0, 255, 0]
+    current_state = np.copy(last_state)  # Create a copy of last_state as current_state
 
-    # Modify the specified regions
-    # Blue color (pixels in rows 10-49 and columns 100-149)
+    # Modify specific regions in current_state
 
-
-    # The color is not affecting color_codepoint.
-    # message[0] is correct and is a row index, but message[1] is supposed to be a color and is not.
-    current_state[10:50, 100:150] = [94, 13, 73]
-
-
-    #current_state[10:50, 100:150] = [14, 13, 33]
-
-
-    # Green color (pixels in rows 100-149 and columns 50-99)
-    current_state[100:150, 50:100] = [23, 37, 201]
-
-    # Green color (pixels in rows 100-149 and columns 50-99)
-    current_state[200:250, 50:100] = [19, 120, 9]
+    current_state[10:50, 100:150] = [94, 13, 73]  # Change row 10 to 49 and column 100 to 149.
+    current_state[100:150, 50:100] = [23, 37, 201]  # Change row 100 to 149 and column 50 to 99.
+    current_state[200:250, 150:200] = [19, 120, 9]  # Change row 200 to 249 and column 150 to 199.
+    current_state[200:250, 200:250] = [190, 37, 59]  # Change row 200 to 249 and column 200 to 249.
+    current_state[0:50, 0:50] = [75, 150, 30]  # Change row 0 to 49 and column 0 to 49.
 
     # Since the last state, we added colors, which are in the current state.
 

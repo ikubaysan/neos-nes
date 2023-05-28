@@ -97,7 +97,7 @@ extern "C"
         // std::cout << "width: " << current_frame->shape[0] << std::endl;
         // std::cout << "height: " << current_frame->shape[1] << std::endl;
         // std::cout << "channels: " << current_frame->shape[2] << std::endl;   
-        std::cout << "hello!!!" << std::endl;     
+        //std::cout << "hello!!!" << std::endl;     
         static Array3D *cached_previous_frame = nullptr;
         static std::string cached_output;
 
@@ -122,6 +122,7 @@ extern "C"
 
         int i_since_last_row = 0;
         bool first_row = true;
+        bool ongoing_range = false;
 
         // Iterate over each pixel
         for (int i = 0; i < total_pixels; ++i, current_pixel += current_frame->shape[2])
@@ -152,21 +153,21 @@ extern "C"
 
 
                     // Print the contents of color_ranges_map
-                    if (first_row)
-                    {
-                        std::cout << "printing color_ranges_map" << std::endl;
-                        for (const auto &color_ranges : color_ranges_map)
-                        {
-                            std::string color = color_ranges.first;
-                            const std::vector<std::pair<int, int>> &ranges = color_ranges.second;
-                            std::cout << "Color: " << color << std::endl;
-                            std::cout << color_ranges.first << std::endl;
-                            for (auto &range : color_ranges.second)
-                            {
-                                std::cout << range.first << " " << range.second << std::endl;
-                            }
-                        }
-                    }
+                    // if (first_row)
+                    // {
+                    //     std::cout << "printing color_ranges_map" << std::endl;
+                    //     for (const auto &color_ranges : color_ranges_map)
+                    //     {
+                    //         std::string color = color_ranges.first;
+                    //         const std::vector<std::pair<int, int>> &ranges = color_ranges.second;
+                    //         std::cout << "Color: " << color << std::endl;
+                    //         std::cout << color_ranges.first << std::endl;
+                    //         for (auto &range : color_ranges.second)
+                    //         {
+                    //             std::cout << range.first << " " << range.second << std::endl;
+                    //         }
+                    //     }
+                    // }
                 }
 
 
@@ -200,9 +201,12 @@ extern "C"
                     first_row = false;
                 }
                 changes_made_for_previous_row = false;
+                ongoing_range = false;
             }
+            
 
-            if (changed)
+            // Only want ranges of changed pixels.
+            if (changed && !ongoing_range)
             {
                 // Get color code
                 int r = current_pixel[0] >> 2;
@@ -217,33 +221,39 @@ extern "C"
                 color_ranges_map[color].push_back({col_idx, 1});
                 // std::cout << col_idx << std::endl;
                 current_color = color;
+                ongoing_range = true;
             }
-            else if (color_ranges_map.find(current_color) != color_ranges_map.end())
+            else if (changed && color_ranges_map.find(current_color) != color_ranges_map.end() && ongoing_range)
             {
                 // Extend the previous range
                 color_ranges_map[current_color].back().second++;
             }
-        }
-
-        // Write out the color and its ranges for the final row
-        if (!color_ranges_map.empty())
-        {
-            ss << encode_utf8(current_frame->shape[0] - 1);
-            changes_made_for_previous_row = true;
-        }
-
-        for (auto &color_ranges : color_ranges_map)
-        {
-            ss << color_ranges.first;
-            for (auto &range : color_ranges.second)
+            else
             {
-                ss << encode_utf8(range.first) << encode_utf8(range.second);
+                // No change and no ongoing range
+                ongoing_range = false;
             }
-            ss << '\x11'; // Delimiter A (end of color)
         }
 
-        if (changes_made_for_previous_row)
-            ss << '\x12'; // Delimiter B (end of row)
+        // // Write out the color and its ranges for the final row
+        // if (!color_ranges_map.empty())
+        // {
+        //     ss << encode_utf8(current_frame->shape[0] - 1);
+        //     changes_made_for_previous_row = true;
+        // }
+
+        // for (auto &color_ranges : color_ranges_map)
+        // {
+        //     ss << color_ranges.first;
+        //     for (auto &range : color_ranges.second)
+        //     {
+        //         ss << encode_utf8(range.first) << encode_utf8(range.second);
+        //     }
+        //     ss << '\x11'; // Delimiter A (end of color)
+        // }
+
+        // if (changes_made_for_previous_row)
+        //     ss << '\x12'; // Delimiter B (end of row)
 
         // Cache the output
         cached_output = ss.str();
