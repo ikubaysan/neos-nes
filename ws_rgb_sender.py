@@ -15,30 +15,6 @@ logger.addHandler(handler)
 HOST = '10.0.0.147'
 PORT = 9002
 
-def rgb_to_utf32(r, g, b):
-    """Takes an RGB tuple and converts it into a single UTF-32 character"""
-    r >>= 2
-    g >>= 2
-    b >>= 2
-    rgb_int = r<<10 | g<<5 | b
-    # Adjust if in the Unicode surrogate range
-    if 0xD800 <= rgb_int <= 0xDFFF:
-        logger.info("Avoiding Unicode surrogate range")
-        if rgb_int < 0xDC00:
-            rgb_int = 0xD7FF  # Maximum value just before the surrogate range
-        else:
-            rgb_int = 0xE000  # Minimum value just after the surrogate range
-    logger.info(f"RGB int: {rgb_int}")
-    return chr(rgb_int)
-
-def utf32_to_rgb(utf32_str):
-    """Converts a UTF-32 string to an RGB tuple"""
-    rgb_int = ord(utf32_str)
-    r = (rgb_int>>10 & 0x3F) << 2
-    g = (rgb_int>>5 & 0x3F) << 2
-    b = (rgb_int & 0x3F) << 2
-    return (r, g, b)
-
 async def send_message(websocket, message):
     await websocket.send(message)
 

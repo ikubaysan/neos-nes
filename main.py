@@ -7,7 +7,7 @@ from libs.Websockets.FrameWebsocket import FrameWebsocket
 from Helpers.GeneralHelpers import *
 import time
 import numpy as np
-import cv2  # add this import
+import cv2
 
 # Configure logging
 logger = logging.getLogger(__name__)

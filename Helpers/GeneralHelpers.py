@@ -1,5 +1,17 @@
 import cProfile
 import pstats
+import numpy as np
+import asyncio
+import websockets
+import cv2
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+handler = logging.StreamHandler()
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 DEFAULT_FRAME_WIDTH = 240
 DEFAULT_FRAME_HEIGHT = 256

@@ -27,6 +27,7 @@ extern "C"
         if (unicode == 0)
         {
             // Replace null terminate symbol with a different unicode character
+            // Will need to change this when I use offset
             color.push_back(0x1);
         }
         else
