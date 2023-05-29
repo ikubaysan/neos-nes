@@ -23,68 +23,68 @@ extern "C"
     std::unordered_map<int, std::string> rgb_to_utf8_cache;
     const int OFFSET = 16;
 
-    std::string encode_utf8(int unicode)
+    std::string encode_utf8(int unicode_codepoint)
     {
-        std::string color;
+        std::string utf8_char;
 
-        if (unicode == 0)
+        if (unicode_codepoint == 0)
         {
             // Be careful of this hitting when there is no offset. 
             // The codepoint would be 0, which is reserved for null and will cause problems.
             // The offset should also account for special character like delimiters.
-            color.push_back(unicode + OFFSET);
+            utf8_char.push_back(unicode_codepoint + OFFSET);
         }
         else
         {
-            // Add the offset to the unicode. This offset is used to avoid the reserved values at the beginning.
-            unicode += OFFSET;
+            // Add the offset to the unicode_codepoint. This offset is used to avoid the reserved values at the beginning.
+            unicode_codepoint += OFFSET;
 
-            // Handling surrogates that are not legal Unicode values.
+            // Handling surrogates that are not legal unicode_codepoint values.
             // The range from 0xD800 to 0xDFFF is reserved for surrogate pairs in UTF-16 encoding.
             // Therefore, if our code falls within this range, we set it to either 0xD7FF or 0xE000.
-            if (0xD800 <= unicode && unicode <= 0xDFFF)
+            if (0xD800 <= unicode_codepoint && unicode_codepoint <= 0xDFFF)
             {
-                if (unicode < 0xDC00)
-                    unicode = 0xD7FF;
+                if (unicode_codepoint < 0xDC00)
+                    unicode_codepoint = 0xD7FF;
                 else
-                    unicode = 0xE000;
+                    unicode_codepoint = 0xE000;
             }
 
             // Encoding the unicode to UTF-8 following the standard rules.
-            if (unicode < 0x80)
+            if (unicode_codepoint < 0x80)
             {
-                // For unicode values less than 0x80, UTF-8 encoding is the same as the unicode value.
-                color.push_back(unicode);
+                // For unicode values less than 0x80, UTF-8 encoding is the same as the unicode value and is done with one byte.
+                utf8_char.push_back(unicode_codepoint);
             }
-            else if (unicode < 0x800)
+            else if (unicode_codepoint < 0x800)
             {
                 // For unicode values less than 0x800, the UTF-8 encoding is done with two bytes.
                 // The first byte starts with '110' followed by the 5 most significant bits of the unicode value.
                 // The second byte starts with '10' followed by the 6 least significant bits of the unicode value.
-                color.push_back(0xC0 | (unicode >> 6));
-                color.push_back(0x80 | (unicode & 0x3F));
+                utf8_char.push_back(0xC0 | (unicode_codepoint >> 6));
+                utf8_char.push_back(0x80 | (unicode_codepoint & 0x3F));
             }
-            else if (unicode < 0x10000)
+            else if (unicode_codepoint < 0x10000)
             {
                 // For unicode values less than 0x10000, the UTF-8 encoding is done with three bytes.
                 // The first byte starts with '1110' followed by the 4 most significant bits of the unicode value.
                 // The remaining bytes start with '10' followed by the 6 next most significant bits of the unicode value.
-                color.push_back(0xE0 | (unicode >> 12));
-                color.push_back(0x80 | ((unicode >> 6) & 0x3F));
-                color.push_back(0x80 | (unicode & 0x3F));
+                utf8_char.push_back(0xE0 | (unicode_codepoint >> 12));
+                utf8_char.push_back(0x80 | ((unicode_codepoint >> 6) & 0x3F));
+                utf8_char.push_back(0x80 | (unicode_codepoint & 0x3F));
             }
             else
             {
                 // For unicode values greater than or equal to 0x10000, the UTF-8 encoding is done with four bytes.
                 // The first byte starts with '11110' followed by the 3 most significant bits of the unicode value.
                 // The remaining bytes start with '10' followed by the 6 next most significant bits of the unicode value.
-                color.push_back(0xF0 | (unicode >> 18));
-                color.push_back(0x80 | ((unicode >> 12) & 0x3F));
-                color.push_back(0x80 | ((unicode >> 6) & 0x3F));
-                color.push_back(0x80 | (unicode & 0x3F));
+                utf8_char.push_back(0xF0 | (unicode_codepoint >> 18));
+                utf8_char.push_back(0x80 | ((unicode_codepoint >> 12) & 0x3F));
+                utf8_char.push_back(0x80 | ((unicode_codepoint >> 6) & 0x3F));
+                utf8_char.push_back(0x80 | (unicode_codepoint & 0x3F));
             }
         }
-        return color;
+        return utf8_char;
     }
 
     void frame_to_string(Array3D *current_frame, Array3D *previous_frame, char *output)
