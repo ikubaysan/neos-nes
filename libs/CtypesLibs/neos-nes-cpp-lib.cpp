@@ -111,8 +111,51 @@ extern "C"
         return b << 10 | g << 5 | r;
     }
 
+    void find_identical_rows(Array3D *current_frame, std::unordered_map<int, bool> *identical_rows)
+    {
+        // Calculate the size of a row in bytes
+        int row_size_bytes = current_frame->shape[1] * current_frame->shape[2];
+        std::vector<unsigned char> row_data(row_size_bytes);
+        std::vector<unsigned char> prev_row_data(row_size_bytes);
+
+        for (int row_idx = 1; row_idx < current_frame->shape[0]; ++row_idx)
+        {
+            std::copy(current_frame->data + row_idx * row_size_bytes,
+                      current_frame->data + (row_idx + 1) * row_size_bytes,
+                      row_data.begin());
+
+            std::copy(current_frame->data + (row_idx - 1) * row_size_bytes,
+                      current_frame->data + row_idx * row_size_bytes,
+                      prev_row_data.begin());
+
+            if (row_data == prev_row_data)
+            {
+                // The row is identical to the previous one
+                (*identical_rows)[row_idx] = true;
+            }
+            else
+            {
+                // The row is not identical to the previous one
+                (*identical_rows)[row_idx] = false;
+            }
+        }
+    }
+
     void frame_to_string(Array3D *current_frame, Array3D *previous_frame, char *output)
     {
+
+        // Find identical rows
+        std::unordered_map<int, bool> identical_rows;
+        find_identical_rows(current_frame, &identical_rows);
+
+        std::cout << "Identical rows: " << std::endl;
+        // Print the rows that are identical
+        for (std::unordered_map<int, bool>::iterator it = identical_rows.begin(); it != identical_rows.end(); ++it)
+        {
+            std::cout << "Row " << it->first << " is identical with previous row: " << (it->second ? "Yes" : "No") << std::endl;
+        }
+        std::cout << "done\n" << std::endl;
+
         static Array3D *cached_previous_frame = nullptr;
         static std::string cached_output;
 
@@ -151,6 +194,7 @@ extern "C"
 
             if (col_idx == 0)
             {
+                // We are at the start of a new row
                 if (!color_ranges_map.empty())
                 {
                     ss << encode_utf8(row_idx - 1);
