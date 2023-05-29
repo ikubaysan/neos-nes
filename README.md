@@ -1,7 +1,7 @@
 # neos-nes
-NES emulation for NeosVR
-Frame data is streamed via websocket into the game.
+NES emulation for NeosVR.
 
+Frame data and controller inputs are transferred via websocket.
 
 ## Getting started:
 

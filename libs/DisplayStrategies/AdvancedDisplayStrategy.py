@@ -1,6 +1,3 @@
-import numpy as np
-
-from Helpers.GeneralHelpers import *
 from libs.DisplayStrategies.DisplayStrategy import *
 
 class AdvancedDisplayStrategy(DisplayStrategy):
