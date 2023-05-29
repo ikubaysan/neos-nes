@@ -7,7 +7,7 @@ from libs.Websockets.FrameWebsocket import FrameWebsocket
 from Helpers.GeneralHelpers import *
 import time
 import numpy as np
-import cv2  # add this import
+import cv2
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ class NESGameServer:
     MAX_RENDER_FRAME_RATE: float = 60.0
     # TODO: For some reason I'm getting 20 FPS if this is 30, and 30 FPS if this is 40.
     MAX_PUBLISH_FRAME_RATE: float = 40.0
-    SCALE_PERCENTAGE = 50
+    SCALE_PERCENTAGE = 100
 
     SCALE_INTERPOLATION_METHOD = cv2.INTER_LINEAR
     """
@@ -94,6 +94,10 @@ class NESGameServer:
             self.last_render_time = time.time()
 
             state, _, done, _ = self.emulator.step(action=self.controller.current_action)
+            # ndarray w/ shape (240, 256, 3)
+            # This means a width of 256, height of 240, and 3 color channels. So 256x240x3 for widthXheightXchannels.
+            # This is the correct, standard NES resolution: 256x240.
+            # The ndarray shape can seem confusing, but think of it as 240 rows and 256 columns.
 
             if self.SCALE_PERCENTAGE < 100:
                 state = cv2.resize(state, (self.new_frame_height, self.new_frame_width), interpolation=self.SCALE_INTERPOLATION_METHOD)
@@ -111,15 +115,15 @@ class NESGameServer:
                 state = state.astype('uint8')
 
                 if time.time() - self.last_full_frame_time >= self.full_frame_interval:
-                    utf32_data = self.frame.full_frame_to_string(state)
+                    utf8_data = self.frame.full_frame_to_string(state)
                     self.last_full_frame_time = time.time()
                 else:
-                    utf32_data = self.frame.frame_to_string(state)
+                    utf8_data = self.frame.frame_to_string(state)
 
                 # Put the frame into the queue
                 # Theoretically, if framerate is too high (> 60), the queue could fill up
                 # and frames could be produced faster than we send them.
-                await self.queue.put(utf32_data)
+                await self.queue.put(utf8_data)
                 self.last_frame_publish_time = time.time()
                 self.execution_count_published += 1
 
@@ -135,8 +139,8 @@ class NESGameServer:
 
     async def consume_frames(self):
         while True:
-            utf32_data = await self.queue.get()  # Wait until a frame is available
-            await self.frame.broadcast(utf32_data)  # Send the frame over the websocket
+            utf8_data = await self.queue.get()  # Wait until a frame is available
+            await self.frame.broadcast(utf8_data)  # Send the frame over the websocket
 
 if __name__ == "__main__":
     HOST = '10.0.0.147'

@@ -19,16 +19,16 @@ async def send_message(websocket, message):
 
 async def handle_connection(websocket, path):
     while True:
-        # Send a string with 3 UTF-32 characters
+        # Send a string with 3 UTF-8 characters
         message = '\U0001F600\U0001F601\U0001F602'
         await send_message(websocket, message)
-        logger.info(f"Sent UTF-32 message: {message} (Bytes: {len(message.encode('utf-8'))})")
+        logger.info(f"Sent UTF-8 message: {message} (Bytes: {len(message.encode('utf-8'))})")
         await asyncio.sleep(1)
 
         #message = '\U0010FFFF\U00110000\U00110001'
         message = r'\U0010FFFF\U00110000\U00110001'
         await send_message(websocket, message)
-        logger.info(f"Sent UTF-32 message beyond codepoint limit: {message} (Bytes: {len(message.encode('utf-8'))})")
+        logger.info(f"Sent UTF-8 message beyond codepoint limit: {message} (Bytes: {len(message.encode('utf-8'))})")
         await asyncio.sleep(1)
 
         # Send a string with 3 ASCII characters
