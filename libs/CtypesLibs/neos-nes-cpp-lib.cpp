@@ -84,6 +84,14 @@ extern "C"
         return utf8_char;
     }
 
+    int get_pixel_color_code(unsigned char *pixel_data)
+    {
+        int r = pixel_data[0] >> 2;
+        int g = pixel_data[1] >> 2;
+        int b = pixel_data[2] >> 2;
+        return b << 10 | g << 5 | r;
+    }
+
     void frame_to_string(Array3D *current_frame, Array3D *previous_frame, char *output)
     {
         static Array3D *cached_previous_frame = nullptr;
@@ -153,12 +161,7 @@ extern "C"
 
             if (changed)
             {
-                // Get color code
-                int r = current_pixel[0] >> 2;
-                int g = current_pixel[1] >> 2;
-                int b = current_pixel[2] >> 2;
-                int rgb_int = b << 10 | g << 5 | r;
-
+                int rgb_int = get_pixel_color_code(current_pixel);
                 color_ranges_map[rgb_int].push_back({col_idx, 1});
                 current_color = rgb_int;
                 ongoing_range = true;
