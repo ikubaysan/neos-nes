@@ -33,26 +33,29 @@ def update_canvas(message: str, canvas: np.ndarray, offset: int):
         i += 1
         while i < len(message):  # Check for delimiter A (end of color)
             if message[i] == '\x01':
-                # If we've reached delimiter A, we're done applying this color to ranges of columns in the current row.
                 i += 1
                 if message[i] == '\x02':
-                    # If we've reached delimiter B, there are no more colors for this row.
                     break
                 else:
-                    # Otherwise, the next character represents a new color.
                     color = utf8_to_rgb(utf8_char=message[i], offset=offset)  # Convert the UTF-8 character to RGB
                     i += 1
             while i + 1 < len(message) and message[i] != '\x01':  # Check for delimiters A and B
-                start = get_start_index(char=message[i], offset=offset)  # Get the start index of the range
-                i += 1
-                # if start < 0:
-                #     print("start is < 0")
-                range_length = get_range_length(char=message[i], offset=offset)  # Get the length of the range
+                start, range_length = get_start_index_and_range_length(char=message[i], offset=offset)  # Get the start index of the range and range length
                 for j in range(start, start + range_length):
                     canvas[row][j] = color
                 i += 1
         i += 1
     return
+
+
+
+def get_start_index_and_range_length(char: str, offset: int) -> (int, int):
+    combined = ord(char) - offset
+    if combined >= 0xD800:
+        combined -= SURROGATE_RANGE_SIZE
+    start = combined // 1000
+    range_length = combined % 1000
+    return start, range_length
 
 def get_row_index(char: str, offset: int) -> int:
     return ord(char) - offset
