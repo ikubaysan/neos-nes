@@ -31,9 +31,9 @@ def utf8_to_rgb(utf8_char: str, offset: int=0) -> tuple:
 def update_canvas(message: str, canvas: np.ndarray, offset: int):
     i = 0
     while i < len(message):
-        row = ord(message[i]) - offset  # Get the row index
+        row = get_row_index(char=message[i], offset=offset)  # Get the row index
         i += 1
-        color = utf8_to_rgb(message[i], offset=offset)  # Convert the UTF-8 character to RGB
+        color = utf8_to_rgb(utf8_char=message[i], offset=offset)  # Convert the UTF-8 character to RGB
         i += 1
         while i < len(message):  # Check for delimiter A (end of color)
             if message[i] == '\x01':
@@ -44,17 +44,27 @@ def update_canvas(message: str, canvas: np.ndarray, offset: int):
                     break
                 else:
                     # Otherwise, the next character represents a new color.
-                    color = utf8_to_rgb(message[i], offset=offset)  # Convert the UTF-8 character to RGB
+                    color = utf8_to_rgb(utf8_char=message[i], offset=offset)  # Convert the UTF-8 character to RGB
                     i += 1
             while i + 1 < len(message) and message[i] != '\x01':  # Check for delimiters A and B
-                start = ord(message[i]) - offset  # Get the start index of the range
+                start = get_start_index(char=message[i], offset=offset)  # Get the start index of the range
                 i += 1
-                range_length = ord(message[i]) - offset  # Get the length of the range
+                range_length = get_range_length(char=message[i], offset=offset)  # Get the length of the range
                 for j in range(start, start + range_length):
                     canvas[row][j] = color
                 i += 1
         i += 1
     return
+
+def get_row_index(char: str, offset: int) -> int:
+    return ord(char) - offset
+
+def get_start_index(char: str, offset: int) -> int:
+    return ord(char) - offset
+
+def get_range_length(char: str, offset: int) -> int:
+    return ord(char) - offset
+
 
 class DisplayStrategy(ABC):
     def __init__(self, host: str, port: int, scale_percentage: int):
@@ -96,7 +106,7 @@ class DisplayStrategy(ABC):
                 async with websockets.connect(uri, max_size=1024 * 1024 * 10) as websocket:
                     while True:
                         message = await websocket.recv()
-                        # Encoding as UTF-8, but in Logix we will decode the RGB character as UTF-8.
+                        # Encoding as UTF-8, but in Logix we will decode the RGB character as UTF-32.
                         # This still works because the unicode code points are identical for both.
                         #print(message)
                         message_bytes = len(message.encode('utf-8'))
