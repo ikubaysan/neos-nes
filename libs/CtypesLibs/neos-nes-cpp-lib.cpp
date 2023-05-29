@@ -116,7 +116,7 @@ extern "C"
 
         bool first_row = true;
         bool range_is_ongoing = false;
-        std::cout << "hello" << std::endl;
+        //std::cout << "hello" << std::endl;
 
         for (int i = 0; i < total_pixels; ++i, current_pixel += current_frame->shape[2])
         {
@@ -145,7 +145,7 @@ extern "C"
                     for (auto &range : color_ranges.second)
                     {
                         int combined = range.first * 1000 + range.second; // Combine start and span into a single integer
-                        std::cout << range.first << " " << range.second << " " << combined << std::endl;
+                        // std::cout << range.first << " " << range.second << " " << combined << std::endl;
                         ss << encode_utf8(combined);
                     }
                     ss << '\x01'; // Delimiter A (end of color)
@@ -194,7 +194,7 @@ extern "C"
                 {
                     int combined = range.first * 1000 + range.second; // Combine start and span into a single integer
                     ss << encode_utf8(combined);
-                    std::cout << range.first << " " << range.second << " " << combined << std::endl;
+                    // std::cout << range.first << " " << range.second << " " << combined << std::endl;
                 }
                 ss << '\x01'; // Delimiter A (end of color)
             }
