@@ -84,6 +84,25 @@ extern "C"
         return utf8_char;
     }
 
+    /*
+        get_pixel_color_code() is used to compute a unique integer value for a pixel's color based on its RGB values.
+        It takes a pointer to an array of three unsigned chars, which represent the red, green, and blue values of the pixel color.
+     
+        It first shifts the RGB values to the right by 2 bits, effectively dividing them by 4 and thereby reducing the
+        precision from 256 possible values to 64. This is done to compress the color data so it can fit into a single integer.
+     
+        The resulting RGB values are then packed into a single integer, with blue occupying the highest order bits,
+        green the next highest, and red the lowest. This is done by shifting the blue value left by 10 bits and the green value left
+        by 5 bits, then bitwise OR-ing these with the red value.
+     
+        The output is a single integer that is a unique representation of the pixel's color, taking into account the lower
+        precision of the RGB values.
+     
+        Parameters:
+            pixel_data - pointer to an array of three unsigned chars, representing the RGB values of a pixel color.
+        Return:
+            An integer that uniquely represents the pixel's color.
+     */
     int get_pixel_color_code(unsigned char *pixel_data)
     {
         int r = pixel_data[0] >> 2;

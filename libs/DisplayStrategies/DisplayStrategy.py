@@ -47,8 +47,6 @@ def update_canvas(message: str, canvas: np.ndarray, offset: int):
         i += 1
     return
 
-
-
 def get_start_index_and_range_length(char: str, offset: int) -> (int, int):
     combined = ord(char) - offset
     if combined >= 0xD800:
