@@ -32,7 +32,7 @@ class NESGameServer:
     # 60.0 with 100 scale runs fine, but is delayed for the viewer when there is substantial movement.
     MAX_RENDER_FRAME_RATE: float = 60.0
     # TODO: For some reason I'm getting 20 FPS if this is 30, and 30 FPS if this is 40.
-    MAX_PUBLISH_FRAME_RATE: float = 60.0
+    MAX_PUBLISH_FRAME_RATE: float = 40.0
     SCALE_PERCENTAGE = 100
 
     SCALE_INTERPOLATION_METHOD = cv2.INTER_LINEAR
