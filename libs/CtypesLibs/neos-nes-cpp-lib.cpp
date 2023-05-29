@@ -224,8 +224,8 @@ extern "C"
                 {
                     // We have reached the row we were skipping to, so reset the skip_to_row_index
                     skip_to_row_index = -1;
-                    std::cout << "Reset skip_to_row_index to -1 at row " << row_idx << " col_idx " << col_idx << std::endl;
-                    std::cout << "color_ranges_map is empty: " << color_ranges_map.empty() << std::endl;
+                    // std::cout << "Reset skip_to_row_index to -1 at row " << row_idx << " col_idx " << col_idx << std::endl;
+                    // std::cout << "color_ranges_map is empty: " << color_ranges_map.empty() << std::endl;
                 }
             }
 
@@ -239,15 +239,15 @@ extern "C"
                     changes_made_for_previous_row = true;
                     if (identical_rows.find(row_idx - 1) != identical_rows.end())
                     {
-                        int combined_row_number = (row_idx - 1) * 1000 + identical_rows[row_idx - 1];
+                        int combined_row_number = (row_idx - 1) * 1000 + (identical_rows[row_idx - 1] + 1);
                         skip_to_row_index = row_idx + identical_rows[row_idx - 1];
                         ss << encode_utf8(combined_row_number);
-                        std::cout << "Set skip_to_row_index to " << skip_to_row_index << " for row " << row_idx - 1 << ". start index: " << row_idx - 1 << " count: " << identical_rows[row_idx - 1] << std::endl;
+                        //std::cout << "Set skip_to_row_index to " << skip_to_row_index << " for row " << row_idx - 1 << ". start index: " << row_idx - 1 << " count: " << identical_rows[row_idx - 1] << std::endl;
                     }
                     else
                     {
                         ss << encode_utf8((row_idx - 1) * 1000); // Add 3 zeros if the row isn't a start of a range of identical rows
-                        std::cout << "Row " << row_idx - 1 << " is not a start of a range of identical rows" << std::endl;
+                        // std::cout << "Row " << row_idx - 1 << " is not a start of a range of identical rows" << std::endl;
                     }
                 }
 
