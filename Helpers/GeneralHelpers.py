@@ -14,8 +14,8 @@ handler = logging.StreamHandler()
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-DEFAULT_FRAME_WIDTH = 240
-DEFAULT_FRAME_HEIGHT = 256
+DEFAULT_FRAME_WIDTH = 256
+DEFAULT_FRAME_HEIGHT = 240
 
 class SpeedProfiler:
     def __init__(self):

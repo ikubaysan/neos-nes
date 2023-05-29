@@ -4,7 +4,7 @@ import numpy as np
 
 from Helpers.GeneralHelpers import *
 
-def rgb_to_utf8(r: int, g: int, b: int, offset=0):
+def rgb_to_utf8(r: int, g: int, b: int, offset: int=0) -> str:
     """Takes an RGB tuple and converts it into a single UTF-8 character"""
     r >>= 2
     g >>= 2
@@ -21,7 +21,7 @@ def rgb_to_utf8(r: int, g: int, b: int, offset=0):
     rgb_int += offset
     return chr(rgb_int)
 
-def utf8_to_rgb(utf8_char: str, offset=0) -> tuple:
+def utf8_to_rgb(utf8_char: str, offset: int=0) -> tuple:
     """Converts a UTF-8 character to an RGB tuple"""
     rgb_int = ord(utf8_char)
     rgb_int -= offset
@@ -31,39 +31,29 @@ def utf8_to_rgb(utf8_char: str, offset=0) -> tuple:
     return (r, g, b)
 
 def update_canvas(message: str, canvas: np.ndarray, offset: int):
-    height = canvas.shape[0]
-    width = canvas.shape[1]
-
     i = 0
-    message_len = len(message)
     while i < len(message):
         row = ord(message[i]) - offset  # Get the row index
-        canvas_row = canvas[row]
         i += 1
         color = utf8_to_rgb(message[i], offset=offset)  # Convert the UTF-8 character to RGB
         i += 1
         while i < len(message):  # Check for delimiter A (end of color)
-            if message[i] == '\x11':
+            if message[i] == '\x01':
                 # If we've reached delimiter A, we're done applying this color to ranges of columns in the current row.
                 i += 1
-                if message[i] == '\x12':
+                if message[i] == '\x02':
                     # If we've reached delimiter B, there are no more colors for this row.
                     break
                 else:
                     # Otherwise, the next character represents a new color.
                     color = utf8_to_rgb(message[i], offset=offset)  # Convert the UTF-8 character to RGB
                     i += 1
-            while i + 1 < len(message) and message[i] != '\x11':  # Check for delimiters A and B
+            while i + 1 < len(message) and message[i] != '\x01':  # Check for delimiters A and B
                 start = ord(message[i]) - offset  # Get the start index of the range
                 i += 1
                 range_length = ord(message[i]) - offset  # Get the length of the range
                 for j in range(start, start + range_length):
-                    try:
-                        canvas[row][j] = color
-                    except:
-                        print("error!!!!\n")
-                        print(message)
-                        time.sleep(10000)
+                    canvas[row][j] = color
                 i += 1
         i += 1
     return
@@ -75,7 +65,10 @@ class DisplayStrategy(ABC):
         self.scale_percentage = scale_percentage
         self.new_frame_width = int(DEFAULT_FRAME_WIDTH * (self.scale_percentage / 100))
         self.new_frame_height = int(DEFAULT_FRAME_HEIGHT * (self.scale_percentage / 100))
-        self.canvas = np.zeros((self.new_frame_width, self.new_frame_height, 3), dtype=np.uint8)  # Initialize an empty canvas
+        # new_frame_height is the amount of rows to create
+        # new_frame_width is the amount of columns to create
+        # 3 RGB channels
+        self.canvas = np.zeros((self.new_frame_height, self.new_frame_width, 3), dtype=np.uint8)  # Initialize an empty canvas
 
     @abstractmethod
     def display(self):

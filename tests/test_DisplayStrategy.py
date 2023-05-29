@@ -108,6 +108,8 @@ def test_update_canvas_1(advanced_display_strategy: AdvancedDisplayStrategy):
 
     update_canvas(message=message, canvas=advanced_display_strategy.canvas, offset=OFFSET)
     advanced_display_strategy.display()
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
     return
 
 
@@ -162,14 +164,15 @@ def test_update_canvas_2(advanced_display_strategy: AdvancedDisplayStrategy):
     # Update and display canvas
     advanced_display_strategy.update_canvas(message=message)
     advanced_display_strategy.display()
-    time.sleep(3)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
     return
 
 
 
 def test_update_canvas_from_cpp(frame_to_string: FrameToString, advanced_display_strategy: AdvancedDisplayStrategy):
     # Initialize the arrays to be all the same color, say, bright red.
-    last_state = np.full((250, 350, 3), [0, 0, 0], dtype=np.uint8)  # Initialize last_state with black color
+    last_state = np.full((350, 350, 3), [0, 0, 0], dtype=np.uint8)  # Initialize last_state with black color
 
     current_state = np.copy(last_state)  # Create a copy of last_state as current_state
 

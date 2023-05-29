@@ -31,7 +31,8 @@ extern "C"
         {
             // Be careful of this hitting when there is no offset. 
             // The codepoint would be 0, which is reserved for null and will cause problems.
-            color.push_back(OFFSET);
+            // The offset should also account for special character like delimiters.
+            color.push_back(unicode + OFFSET);
         }
         else
         {
@@ -120,7 +121,6 @@ extern "C"
         std::string current_color;
 
 
-        int i_since_last_row = 0;
         bool first_row = true;
         bool ongoing_range = false;
 
@@ -137,11 +137,6 @@ extern "C"
             int row_idx = i / current_frame->shape[1]; // Row index
             int col_idx = i % current_frame->shape[1]; // Column index
 
-            //if (first_row) std::cout << "Row: " << row_idx << "Column:" << col_idx << std::endl;
-
-            // std::cout << row_idx << " " << col_idx << std::endl;
-            //  These are correct
-
             // Check for the start of a new row
             if (col_idx == 0)
             {
@@ -151,45 +146,17 @@ extern "C"
                 {
                     ss << encode_utf8(row_idx - 1);
                     changes_made_for_previous_row = true;
-                    //if (first_row) {std::cout << "Row: " << row_idx - 1 << std::endl;}
-
-                    // Print the contents of color_ranges_map
-                    // if (first_row)
-                    // {
-                    //     std::cout << "printing color_ranges_map" << std::endl;
-                    //     for (const auto &color_ranges : color_ranges_map)
-                    //     {
-                    //         std::string color = color_ranges.first;
-                    //         const std::vector<std::pair<int, int>> &ranges = color_ranges.second;
-                    //         std::cout << "Color: " << color << std::endl;
-                    //         std::cout << color_ranges.first << std::endl;
-                    //         for (auto &range : color_ranges.second)
-                    //         {
-                    //             std::cout << range.first << " " << range.second << std::endl;
-                    //         }
-                    //     }
-                    // }
                 }
 
                 // Write out the color and its ranges for the previous row
                 for (auto &color_ranges : color_ranges_map)
                 {
                     ss << color_ranges.first;
-                    if (first_row && !color_ranges_map.empty())
-                    {
-                        //std::cout << color_ranges.first << std::endl;
-                    }
                     for (auto &range : color_ranges.second)
                     {
-                        // std::cout << range.first << " " << range.second << std::endl;
-                        //   These are correct
                         ss << encode_utf8(range.first) << encode_utf8(range.second);
-                        if (first_row && !color_ranges_map.empty())
-                        {
-                            //std::cout << color_ranges.first << " " << range.first << " " << range.second << std::endl;
-                        }
                     }
-                    ss << '\x11'; // Delimiter A (end of color)
+                    ss << '\x01'; // Delimiter A (end of color)
                 }
 
                 // Clear color_ranges_map
@@ -197,15 +164,12 @@ extern "C"
 
                 if (changes_made_for_previous_row)
                 {
-                    ss << '\x12'; // Delimiter B (end of row)
+                    ss << '\x02'; // Delimiter B (end of row)
                     first_row = false;
                 }
                 changes_made_for_previous_row = false;
                 ongoing_range = false;
-                //std::cout << "i_since_last_row: " << i_since_last_row << std::endl;
-                i_since_last_row = 0;
             }
-            i_since_last_row++;
             
 
             // Only want ranges of changed pixels.
@@ -216,13 +180,10 @@ extern "C"
                 int g = current_pixel[1] >> 2;
                 int b = current_pixel[2] >> 2;
                 int rgb_int = b << 10 | g << 5 | r;
-                // for testing
-                //rgb_int = 30;
                 std::string color = encode_utf8(rgb_int);
 
                 // Start a new range
                 color_ranges_map[color].push_back({col_idx, 1});
-                // std::cout << col_idx << std::endl;
                 current_color = color;
                 ongoing_range = true;
             }
