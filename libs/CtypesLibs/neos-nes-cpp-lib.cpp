@@ -169,7 +169,7 @@ extern "C"
             }
 
             // Only want ranges of changed pixels.
-            if (changed && !ongoing_range)
+            if (changed)
             {
                 // Get color code
                 int r = current_pixel[0] >> 2;
@@ -185,7 +185,7 @@ extern "C"
             }
             else if (changed && color_ranges_map.find(current_color) != color_ranges_map.end() && ongoing_range)
             {
-                // Extend the previous range
+                // Extend the ongoing range
                 color_ranges_map[current_color].back().second++;
             }
             else
