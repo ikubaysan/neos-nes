@@ -8,20 +8,16 @@ def rgb_to_utf8(r: int, g: int, b: int, offset: int=0) -> str:
     g >>= 2
     b >>= 2
     rgb_int = r<<10 | g<<5 | b
-    # Adjust if in the Unicode surrogate range
-    if 0xD800 <= rgb_int <= 0xDFFF:
-        logger.info("Avoiding Unicode surrogate range")
-        if rgb_int < 0xDC00:
-            rgb_int = 0xD7FF  # Maximum value just before the surrogate range
-        else:
-            rgb_int = 0xE000  # Minimum value just after the surrogate range
-    # TODO: having this here might not be right due to above ifs.
     rgb_int += offset
+    if rgb_int >= 0xD800:
+        rgb_int += SURROGATE_RANGE_SIZE
     return chr(rgb_int)
 
 def utf8_to_rgb(utf8_char: str, offset: int=0) -> tuple:
     """Converts a UTF-8 character to an RGB tuple"""
     rgb_int = ord(utf8_char)
+    if rgb_int >= 0xD800:
+        rgb_int -= SURROGATE_RANGE_SIZE
     rgb_int -= offset
     r = (rgb_int>>10 & 0x3F) << 2
     g = (rgb_int>>5 & 0x3F) << 2

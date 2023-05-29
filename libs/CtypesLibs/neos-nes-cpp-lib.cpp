@@ -22,6 +22,7 @@ extern "C"
 
     std::unordered_map<int, std::string> rgb_to_utf8_cache;
     const int OFFSET = 16;
+    const int SURROGATE_RANGE_SIZE = 2048;
 
     std::string encode_utf8(int unicode_codepoint)
     {
@@ -40,15 +41,11 @@ extern "C"
             unicode_codepoint += OFFSET;
 
             // Handling surrogates that are not legal unicode_codepoint values.
-            // The range from 0xD800 to 0xDFFF is reserved for surrogate pairs in UTF-16 encoding.
-            // Therefore, if our code falls within this range, we set it to either 0xD7FF or 0xE000.
-            if (0xD800 <= unicode_codepoint && unicode_codepoint <= 0xDFFF)
-            {
-                if (unicode_codepoint < 0xDC00)
-                    unicode_codepoint = 0xD7FF;
-                else
-                    unicode_codepoint = 0xE000;
-            }
+            // If the unicode_codepoint is the lowest part of the surrogate range or higher, we add the size of the surrogate range to it.
+            // This will make it fall outside of the surrogate range. 
+            // The decoding code must subtract the offset and add the surrogate range size back.
+            if (unicode_codepoint >= 0xD800)
+                unicode_codepoint += SURROGATE_RANGE_SIZE;
 
             // Encoding the unicode to UTF-8 following the standard rules.
             if (unicode_codepoint < 0x80)
@@ -89,14 +86,6 @@ extern "C"
 
     void frame_to_string(Array3D *current_frame, Array3D *previous_frame, char *output)
     {
-        //frame->shape[0] = width
-        //frame->shape[1] = height
-        //frame->shape[2] = RGB channels
-        
-        // std::cout << "width: " << current_frame->shape[1] << std::endl;
-        // std::cout << "height: " << current_frame->shape[0] << std::endl;
-        // std::cout << "channels: " << current_frame->shape[2] << std::endl;
-
         static Array3D *cached_previous_frame = nullptr;
         static std::string cached_output;
 
@@ -114,14 +103,12 @@ extern "C"
         unsigned char *previous_pixel = previous_frame ? previous_frame->data : nullptr;
         bool changes_made_for_previous_row = false;
 
-        // Use a map to store color and its associated ranges
-        std::unordered_map<std::string, std::vector<std::pair<int, int>>> color_ranges_map;
-        std::string current_color;
+        std::unordered_map<int, std::vector<std::pair<int, int>>> color_ranges_map;
+        int current_color;
 
         bool first_row = true;
         bool ongoing_range = false;
 
-        // Iterate over each pixel
         for (int i = 0; i < total_pixels; ++i, current_pixel += current_frame->shape[2])
         {
             bool changed = true;
@@ -134,21 +121,18 @@ extern "C"
             int row_idx = i / current_frame->shape[1]; // Row index
             int col_idx = i % current_frame->shape[1]; // Column index
 
-            // Check for the start of a new row
             if (col_idx == 0)
             {
-                
-                // Write the index of the previous row
                 if (!color_ranges_map.empty())
                 {
                     ss << encode_utf8(row_idx - 1);
                     changes_made_for_previous_row = true;
                 }
 
-                // Write out the color and its ranges for the previous row
                 for (auto &color_ranges : color_ranges_map)
                 {
-                    ss << color_ranges.first;
+                    // Write the color's unicode codepoint (SURROGATE_RANGE_SIZE may be added if this value is >= 0xD800)
+                    ss << encode_utf8(color_ranges.first);
                     for (auto &range : color_ranges.second)
                     {
                         ss << encode_utf8(range.first) << encode_utf8(range.second);
@@ -156,7 +140,6 @@ extern "C"
                     ss << '\x01'; // Delimiter A (end of color)
                 }
 
-                // Clear color_ranges_map
                 color_ranges_map.clear();
 
                 if (changes_made_for_previous_row)
@@ -168,7 +151,6 @@ extern "C"
                 ongoing_range = false;
             }
 
-            // Only want ranges of changed pixels.
             if (changed)
             {
                 // Get color code
@@ -176,52 +158,37 @@ extern "C"
                 int g = current_pixel[1] >> 2;
                 int b = current_pixel[2] >> 2;
                 int rgb_int = b << 10 | g << 5 | r;
-                std::string color = encode_utf8(rgb_int);
 
-                // Start a new range
-                color_ranges_map[color].push_back({col_idx, 1});
-                current_color = color;
+                color_ranges_map[rgb_int].push_back({col_idx, 1});
+                current_color = rgb_int;
                 ongoing_range = true;
             }
             else if (changed && color_ranges_map.find(current_color) != color_ranges_map.end() && ongoing_range)
             {
-                // Extend the ongoing range
                 color_ranges_map[current_color].back().second++;
             }
-            else
-            {
-                // No change and no ongoing range
-                ongoing_range = false;
-            }
         }
 
-        // // Write out the color and its ranges for the final row
+        // Handle the last row if necessary
         if (!color_ranges_map.empty())
         {
-            // We need to write colors for the final row, whose index is total rows - 1
             ss << encode_utf8(current_frame->shape[0] - 1);
-            changes_made_for_previous_row = true;
-        }
-
-        for (auto &color_ranges : color_ranges_map)
-        {
-            ss << color_ranges.first;
-            for (auto &range : color_ranges.second)
+            for (auto &color_ranges : color_ranges_map)
             {
-                ss << encode_utf8(range.first) << encode_utf8(range.second);
+                // Write the color's unicode codepoint (SURROGATE_RANGE_SIZE may be added if this value is >= 0xD800)
+                ss << encode_utf8(color_ranges.first);
+                for (auto &range : color_ranges.second)
+                {
+                    ss << encode_utf8(range.first) << encode_utf8(range.second);
+                }
+                ss << '\x01'; // Delimiter A (end of color)
             }
-            ss << '\x01'; // Delimiter A (end of color)
+            ss << '\x02'; // Delimiter B (end of row)
         }
 
-        if (changes_made_for_previous_row)
-            ss << '\x02'; // Delimiter B (end of row)
-        changes_made_for_previous_row = false;
-        ongoing_range = false;
-
-        // Cache the output
+        cached_previous_frame = previous_frame;
         cached_output = ss.str();
         std::strncpy(output, cached_output.c_str(), cached_output.size());
         output[cached_output.size()] = '\0';
-        cached_previous_frame = previous_frame;
     }
 }

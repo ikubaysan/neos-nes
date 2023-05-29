@@ -16,6 +16,7 @@ logger.addHandler(handler)
 
 DEFAULT_FRAME_WIDTH = 256
 DEFAULT_FRAME_HEIGHT = 240
+SURROGATE_RANGE_SIZE = 2048
 
 class SpeedProfiler:
     def __init__(self):
