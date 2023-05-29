@@ -65,6 +65,8 @@ Messages are formatted as such:
 
 ```
 
+A range's start and span are both 3 digits, and are combined into a single UTF8 character.
+
 
 When decoding the messages in python/logix to display our frame, we need to iterate over the characters of the message and:
 * Read the first character, which will be a row number

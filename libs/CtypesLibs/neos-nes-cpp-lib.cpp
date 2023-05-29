@@ -111,12 +111,15 @@ extern "C"
         return b << 10 | g << 5 | r;
     }
 
-    void find_identical_rows(Array3D *current_frame, std::unordered_map<int, bool> *identical_rows)
+    void find_identical_rows(Array3D *current_frame, std::unordered_map<int, int> *identical_rows)
     {
         // Calculate the size of a row in bytes
         int row_size_bytes = current_frame->shape[1] * current_frame->shape[2];
         std::vector<unsigned char> row_data(row_size_bytes);
         std::vector<unsigned char> prev_row_data(row_size_bytes);
+
+        int identical_row_start = -1;
+        int identical_row_count = 0;
 
         for (int row_idx = 1; row_idx < current_frame->shape[0]; ++row_idx)
         {
@@ -131,28 +134,45 @@ extern "C"
             if (row_data == prev_row_data)
             {
                 // The row is identical to the previous one
-                (*identical_rows)[row_idx] = true;
+                if (identical_row_start == -1)
+                {
+                    identical_row_start = row_idx - 1;
+                }
+                identical_row_count++;
             }
             else
             {
                 // The row is not identical to the previous one
-                (*identical_rows)[row_idx] = false;
+                if (identical_row_start != -1)
+                {
+                    // We have just left a range of identical rows
+                    (*identical_rows)[identical_row_start] = identical_row_count;
+
+                    identical_row_start = -1;
+                    identical_row_count = 0;
+                }
             }
+        }
+
+        if (identical_row_start != -1)
+        {
+            // Last row(s) were part of a range of identical rows
+            (*identical_rows)[identical_row_start] = identical_row_count;
         }
     }
 
     void frame_to_string(Array3D *current_frame, Array3D *previous_frame, char *output)
     {
 
-        // Find identical rows
-        std::unordered_map<int, bool> identical_rows;
+        // Find ranges of identical rows
+        std::unordered_map<int, int> identical_rows;
         find_identical_rows(current_frame, &identical_rows);
 
-        std::cout << "Identical rows: " << std::endl;
-        // Print the rows that are identical
-        for (std::unordered_map<int, bool>::iterator it = identical_rows.begin(); it != identical_rows.end(); ++it)
+        std::cout << "Ranges of identical rows: " << std::endl;
+        // Print the ranges of identical rows
+        for (std::unordered_map<int, int>::iterator it = identical_rows.begin(); it != identical_rows.end(); ++it)
         {
-            std::cout << "Row " << it->first << " is identical with previous row: " << (it->second ? "Yes" : "No") << std::endl;
+            std::cout << "Identical rows start at row " << it->first << " and count is: " << it->second << std::endl;
         }
         std::cout << "done\n" << std::endl;
 
