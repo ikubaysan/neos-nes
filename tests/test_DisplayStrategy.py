@@ -1,9 +1,5 @@
 import pytest
-import numpy as np
 import random
-import time
-import cv2
-from Helpers.GeneralHelpers import *
 from libs.DisplayStrategies.AdvancedDisplayStrategy import *
 from libs.CtypesLibs.CPPFrameToString import FrameToString
 
@@ -19,47 +15,6 @@ def advanced_display_strategy():
 def frame_to_string():
     frame_to_string = FrameToString()
     return frame_to_string
-
-
-def message_to_color_dictionary(message, offset):
-    # Initialize output dictionary
-    color_dict = {}
-
-    # End of color and row delimiters
-    delim_a = chr(1)
-    delim_b = chr(2)
-
-    i = 0  # Initialize index for looping through the message
-
-    while i < len(message):
-
-        # this is affected by current_state[10:50, 100:150], will start at 10 in this case
-        row_idx = ord(message[i]) - offset
-        i += 1
-
-        color_dict[row_idx] = {}
-
-        while i < len(message) and message[i] != delim_b:
-            color_codepoint = utf8_to_rgb(message[i])
-            i += 1
-
-            color_dict[row_idx][color_codepoint] = []
-
-            while i < len(message) and message[i] != delim_a:
-                range_start = ord(message[i]) - offset
-                i += 1
-                range_span = ord(message[i]) - offset
-                i += 1
-                color_dict[row_idx][color_codepoint].append([range_start, range_span])
-
-            i += 1  # Skip delim_a
-
-        i += 1  # Skip delim_b
-
-    return color_dict
-
-
-
 
 def test_update_canvas_1(advanced_display_strategy: AdvancedDisplayStrategy):
     OFFSET = advanced_display_strategy.OFFSET
@@ -190,12 +145,6 @@ def test_update_canvas_from_cpp(frame_to_string: FrameToString, advanced_display
     current_state_constructed_by_message = last_state
 
     message = frame_to_string.get_string(current_state, last_state)
-
-    message_to_codepoints = [(ord(utf8char) - advanced_display_strategy.OFFSET) for utf8char in message]
-
-    message_len = len(message)
-    result_dict = message_to_color_dictionary(message=message, offset=16)
-
     advanced_display_strategy.update_canvas(message=message,
                                             canvas=current_state_constructed_by_message)
     cv2.imshow("Current state constructed by message", current_state_constructed_by_message)

@@ -1,29 +1,23 @@
 from abc import ABC, abstractmethod
-from typing import Union
-import numpy as np
 
-from Helpers.GeneralHelpers import *
+from libs.Helpers.GeneralHelpers import *
 
 def rgb_to_utf8(r: int, g: int, b: int, offset: int=0) -> str:
     """Takes an RGB tuple and converts it into a single UTF-8 character"""
     r >>= 2
     g >>= 2
     b >>= 2
-    rgb_int = r<<10 | g<<5 | b
-    # Adjust if in the Unicode surrogate range
-    if 0xD800 <= rgb_int <= 0xDFFF:
-        logger.info("Avoiding Unicode surrogate range")
-        if rgb_int < 0xDC00:
-            rgb_int = 0xD7FF  # Maximum value just before the surrogate range
-        else:
-            rgb_int = 0xE000  # Minimum value just after the surrogate range
-    # TODO: having this here might not be right due to above ifs.
+    rgb_int = b<<10 | g<<5 | r
     rgb_int += offset
+    if rgb_int >= 0xD800:
+        rgb_int += SURROGATE_RANGE_SIZE
     return chr(rgb_int)
 
 def utf8_to_rgb(utf8_char: str, offset: int=0) -> tuple:
     """Converts a UTF-8 character to an RGB tuple"""
     rgb_int = ord(utf8_char)
+    if rgb_int >= 0xD800:
+        rgb_int -= SURROGATE_RANGE_SIZE
     rgb_int -= offset
     r = (rgb_int>>10 & 0x3F) << 2
     g = (rgb_int>>5 & 0x3F) << 2
@@ -33,30 +27,43 @@ def utf8_to_rgb(utf8_char: str, offset: int=0) -> tuple:
 def update_canvas(message: str, canvas: np.ndarray, offset: int):
     i = 0
     while i < len(message):
-        row = ord(message[i]) - offset  # Get the row index
+        row = get_row_index(char=message[i], offset=offset)  # Get the row index
         i += 1
-        color = utf8_to_rgb(message[i], offset=offset)  # Convert the UTF-8 character to RGB
+        color = utf8_to_rgb(utf8_char=message[i], offset=offset)  # Convert the UTF-8 character to RGB
         i += 1
         while i < len(message):  # Check for delimiter A (end of color)
             if message[i] == '\x01':
-                # If we've reached delimiter A, we're done applying this color to ranges of columns in the current row.
                 i += 1
                 if message[i] == '\x02':
-                    # If we've reached delimiter B, there are no more colors for this row.
                     break
                 else:
-                    # Otherwise, the next character represents a new color.
-                    color = utf8_to_rgb(message[i], offset=offset)  # Convert the UTF-8 character to RGB
+                    color = utf8_to_rgb(utf8_char=message[i], offset=offset)  # Convert the UTF-8 character to RGB
                     i += 1
             while i + 1 < len(message) and message[i] != '\x01':  # Check for delimiters A and B
-                start = ord(message[i]) - offset  # Get the start index of the range
-                i += 1
-                range_length = ord(message[i]) - offset  # Get the length of the range
+                start, range_length = get_start_index_and_range_length(char=message[i], offset=offset)  # Get the start index of the range and range length
                 for j in range(start, start + range_length):
                     canvas[row][j] = color
                 i += 1
         i += 1
     return
+
+def get_start_index_and_range_length(char: str, offset: int) -> (int, int):
+    combined = ord(char) - offset
+    if combined >= 0xD800:
+        combined -= SURROGATE_RANGE_SIZE
+    start = combined // 1000
+    range_length = combined % 1000
+    return start, range_length
+
+def get_row_index(char: str, offset: int) -> int:
+    return ord(char) - offset
+
+def get_start_index(char: str, offset: int) -> int:
+    return ord(char) - offset
+
+def get_range_length(char: str, offset: int) -> int:
+    return ord(char) - offset
+
 
 class DisplayStrategy(ABC):
     def __init__(self, host: str, port: int, scale_percentage: int):
@@ -98,7 +105,7 @@ class DisplayStrategy(ABC):
                 async with websockets.connect(uri, max_size=1024 * 1024 * 10) as websocket:
                     while True:
                         message = await websocket.recv()
-                        # Encoding as UTF-8, but in Logix we will decode the RGB character as UTF-8.
+                        # Encoding as UTF-8, but in Logix we will decode the RGB character as UTF-32.
                         # This still works because the unicode code points are identical for both.
                         #print(message)
                         message_bytes = len(message.encode('utf-8'))

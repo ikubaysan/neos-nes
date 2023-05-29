@@ -2,7 +2,6 @@ import asyncio
 import websockets
 import logging
 import random
-import struct
 
 # Configure logging
 logger = logging.getLogger(__name__)

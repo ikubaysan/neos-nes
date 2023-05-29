@@ -22,81 +22,97 @@ extern "C"
 
     std::unordered_map<int, std::string> rgb_to_utf8_cache;
     const int OFFSET = 16;
+    const int SURROGATE_RANGE_SIZE = 2048;
 
-    std::string encode_utf8(int unicode)
+    std::string encode_utf8(int unicode_codepoint)
     {
-        std::string color;
+        std::string utf8_char;
 
-        if (unicode == 0)
+        if (unicode_codepoint == 0)
         {
             // Be careful of this hitting when there is no offset. 
             // The codepoint would be 0, which is reserved for null and will cause problems.
             // The offset should also account for special character like delimiters.
-            color.push_back(unicode + OFFSET);
+            utf8_char.push_back(unicode_codepoint + OFFSET);
         }
         else
         {
-            // Add the offset to the unicode. This offset is used to avoid the reserved values at the beginning.
-            unicode += OFFSET;
+            // Add the offset to the unicode_codepoint. This offset is used to avoid the reserved values at the beginning.
+            unicode_codepoint += OFFSET;
 
-            // Handling surrogates that are not legal Unicode values.
-            // The range from 0xD800 to 0xDFFF is reserved for surrogate pairs in UTF-16 encoding.
-            // Therefore, if our code falls within this range, we set it to either 0xD7FF or 0xE000.
-            if (0xD800 <= unicode && unicode <= 0xDFFF)
-            {
-                if (unicode < 0xDC00)
-                    unicode = 0xD7FF;
-                else
-                    unicode = 0xE000;
-            }
+            // Handling surrogates that are not legal unicode_codepoint values.
+            // If the unicode_codepoint is the lowest part of the surrogate range or higher, we add the size of the surrogate range to it.
+            // This will make it fall outside of the surrogate range. 
+            // The decoding code must subtract the offset and add the surrogate range size back.
+            if (unicode_codepoint >= 0xD800)
+                unicode_codepoint += SURROGATE_RANGE_SIZE;
 
             // Encoding the unicode to UTF-8 following the standard rules.
-            if (unicode < 0x80)
+            if (unicode_codepoint < 0x80)
             {
-                // For unicode values less than 0x80, UTF-8 encoding is the same as the unicode value.
-                color.push_back(unicode);
+                // For unicode values less than 0x80, UTF-8 encoding is the same as the unicode value and is done with one byte.
+                utf8_char.push_back(unicode_codepoint);
             }
-            else if (unicode < 0x800)
+            else if (unicode_codepoint < 0x800)
             {
                 // For unicode values less than 0x800, the UTF-8 encoding is done with two bytes.
                 // The first byte starts with '110' followed by the 5 most significant bits of the unicode value.
                 // The second byte starts with '10' followed by the 6 least significant bits of the unicode value.
-                color.push_back(0xC0 | (unicode >> 6));
-                color.push_back(0x80 | (unicode & 0x3F));
+                utf8_char.push_back(0xC0 | (unicode_codepoint >> 6));
+                utf8_char.push_back(0x80 | (unicode_codepoint & 0x3F));
             }
-            else if (unicode < 0x10000)
+            else if (unicode_codepoint < 0x10000)
             {
                 // For unicode values less than 0x10000, the UTF-8 encoding is done with three bytes.
                 // The first byte starts with '1110' followed by the 4 most significant bits of the unicode value.
                 // The remaining bytes start with '10' followed by the 6 next most significant bits of the unicode value.
-                color.push_back(0xE0 | (unicode >> 12));
-                color.push_back(0x80 | ((unicode >> 6) & 0x3F));
-                color.push_back(0x80 | (unicode & 0x3F));
+                utf8_char.push_back(0xE0 | (unicode_codepoint >> 12));
+                utf8_char.push_back(0x80 | ((unicode_codepoint >> 6) & 0x3F));
+                utf8_char.push_back(0x80 | (unicode_codepoint & 0x3F));
             }
             else
             {
                 // For unicode values greater than or equal to 0x10000, the UTF-8 encoding is done with four bytes.
                 // The first byte starts with '11110' followed by the 3 most significant bits of the unicode value.
                 // The remaining bytes start with '10' followed by the 6 next most significant bits of the unicode value.
-                color.push_back(0xF0 | (unicode >> 18));
-                color.push_back(0x80 | ((unicode >> 12) & 0x3F));
-                color.push_back(0x80 | ((unicode >> 6) & 0x3F));
-                color.push_back(0x80 | (unicode & 0x3F));
+                utf8_char.push_back(0xF0 | (unicode_codepoint >> 18));
+                utf8_char.push_back(0x80 | ((unicode_codepoint >> 12) & 0x3F));
+                utf8_char.push_back(0x80 | ((unicode_codepoint >> 6) & 0x3F));
+                utf8_char.push_back(0x80 | (unicode_codepoint & 0x3F));
             }
         }
-        return color;
+        return utf8_char;
+    }
+
+    /*
+        get_pixel_color_code() is used to compute a unique integer value for a pixel's color based on its RGB values.
+        It takes a pointer to an array of three unsigned chars, which represent the red, green, and blue values of the pixel color.
+     
+        It first shifts the RGB values to the right by 2 bits, effectively dividing them by 4 and thereby reducing the
+        precision from 256 possible values to 64. This is done to compress the color data so it can fit into a single integer.
+     
+        The resulting RGB values are then packed into a single integer, with blue occupying the highest order bits,
+        green the next highest, and red the lowest. This is done by shifting the blue value left by 10 bits and the green value left
+        by 5 bits, then bitwise OR-ing these with the red value.
+     
+        The output is a single integer that is a unique representation of the pixel's color, taking into account the lower
+        precision of the RGB values.
+     
+        Parameters:
+            pixel_data - pointer to an array of three unsigned chars, representing the RGB values of a pixel color.
+        Return:
+            An integer that uniquely represents the pixel's color.
+     */
+    int get_pixel_color_code(unsigned char *pixel_data)
+    {
+        int r = pixel_data[0] >> 2;
+        int g = pixel_data[1] >> 2;
+        int b = pixel_data[2] >> 2;
+        return b << 10 | g << 5 | r;
     }
 
     void frame_to_string(Array3D *current_frame, Array3D *previous_frame, char *output)
     {
-        //frame->shape[0] = width
-        //frame->shape[1] = height
-        //frame->shape[2] = RGB channels
-        
-        // std::cout << "width: " << current_frame->shape[1] << std::endl;
-        // std::cout << "height: " << current_frame->shape[0] << std::endl;
-        // std::cout << "channels: " << current_frame->shape[2] << std::endl;
-
         static Array3D *cached_previous_frame = nullptr;
         static std::string cached_output;
 
@@ -114,14 +130,13 @@ extern "C"
         unsigned char *previous_pixel = previous_frame ? previous_frame->data : nullptr;
         bool changes_made_for_previous_row = false;
 
-        // Use a map to store color and its associated ranges
-        std::unordered_map<std::string, std::vector<std::pair<int, int>>> color_ranges_map;
-        std::string current_color;
+        std::unordered_map<int, std::vector<std::pair<int, int>>> color_ranges_map;
+        int range_current_color = -1;
 
         bool first_row = true;
-        bool ongoing_range = false;
+        bool range_is_ongoing = false;
+        //std::cout << "hello" << std::endl;
 
-        // Iterate over each pixel
         for (int i = 0; i < total_pixels; ++i, current_pixel += current_frame->shape[2])
         {
             bool changed = true;
@@ -134,29 +149,27 @@ extern "C"
             int row_idx = i / current_frame->shape[1]; // Row index
             int col_idx = i % current_frame->shape[1]; // Column index
 
-            // Check for the start of a new row
             if (col_idx == 0)
             {
-                
-                // Write the index of the previous row
                 if (!color_ranges_map.empty())
                 {
                     ss << encode_utf8(row_idx - 1);
                     changes_made_for_previous_row = true;
                 }
 
-                // Write out the color and its ranges for the previous row
                 for (auto &color_ranges : color_ranges_map)
                 {
-                    ss << color_ranges.first;
+                    // Write the color's unicode codepoint (SURROGATE_RANGE_SIZE may be added if this value is >= 0xD800)
+                    ss << encode_utf8(color_ranges.first);
                     for (auto &range : color_ranges.second)
                     {
-                        ss << encode_utf8(range.first) << encode_utf8(range.second);
+                        int combined = range.first * 1000 + range.second; // Combine start and span into a single integer
+                        // std::cout << range.first << " " << range.second << " " << combined << std::endl;
+                        ss << encode_utf8(combined);
                     }
                     ss << '\x01'; // Delimiter A (end of color)
                 }
 
-                // Clear color_ranges_map
                 color_ranges_map.clear();
 
                 if (changes_made_for_previous_row)
@@ -165,63 +178,51 @@ extern "C"
                     first_row = false;
                 }
                 changes_made_for_previous_row = false;
-                ongoing_range = false;
+                range_is_ongoing = false;
+                range_current_color = -1;
             }
 
-            // Only want ranges of changed pixels.
-            if (changed)
+            int rgb_int = get_pixel_color_code(current_pixel);
+            if (changed && rgb_int != range_current_color)
             {
-                // Get color code
-                int r = current_pixel[0] >> 2;
-                int g = current_pixel[1] >> 2;
-                int b = current_pixel[2] >> 2;
-                int rgb_int = b << 10 | g << 5 | r;
-                std::string color = encode_utf8(rgb_int);
-
-                // Start a new range
-                color_ranges_map[color].push_back({col_idx, 1});
-                current_color = color;
-                ongoing_range = true;
+                // The color changed, and the pixel changed since the last frame, so we need to add a new range
+                color_ranges_map[rgb_int].push_back({col_idx, 1});
+                range_current_color = rgb_int;
+                range_is_ongoing = true;
             }
-            else if (changed && color_ranges_map.find(current_color) != color_ranges_map.end() && ongoing_range)
+            else if (changed && color_ranges_map.find(range_current_color) != color_ranges_map.end() && range_is_ongoing)
             {
-                // Extend the ongoing range
-                color_ranges_map[current_color].back().second++;
+                color_ranges_map[range_current_color].back().second++;
             }
             else
             {
-                // No change and no ongoing range
-                ongoing_range = false;
+                range_is_ongoing = false;
+                range_current_color = -1;
             }
         }
 
-        // // Write out the color and its ranges for the final row
+        // Handle the last row if necessary
         if (!color_ranges_map.empty())
         {
-            // We need to write colors for the final row, whose index is total rows - 1
             ss << encode_utf8(current_frame->shape[0] - 1);
-            changes_made_for_previous_row = true;
-        }
-
-        for (auto &color_ranges : color_ranges_map)
-        {
-            ss << color_ranges.first;
-            for (auto &range : color_ranges.second)
+            for (auto &color_ranges : color_ranges_map)
             {
-                ss << encode_utf8(range.first) << encode_utf8(range.second);
+                // Write the color's unicode codepoint (SURROGATE_RANGE_SIZE may be added if this value is >= 0xD800)
+                ss << encode_utf8(color_ranges.first);
+                for (auto &range : color_ranges.second)
+                {
+                    int combined = range.first * 1000 + range.second; // Combine start and span into a single integer
+                    ss << encode_utf8(combined);
+                    // std::cout << range.first << " " << range.second << " " << combined << std::endl;
+                }
+                ss << '\x01'; // Delimiter A (end of color)
             }
-            ss << '\x01'; // Delimiter A (end of color)
+            ss << '\x02'; // Delimiter B (end of row)
         }
 
-        if (changes_made_for_previous_row)
-            ss << '\x02'; // Delimiter B (end of row)
-        changes_made_for_previous_row = false;
-        ongoing_range = false;
-
-        // Cache the output
+        cached_previous_frame = previous_frame;
         cached_output = ss.str();
         std::strncpy(output, cached_output.c_str(), cached_output.size());
         output[cached_output.size()] = '\0';
-        cached_previous_frame = previous_frame;
     }
 }
