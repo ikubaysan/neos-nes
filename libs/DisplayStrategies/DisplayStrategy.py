@@ -27,10 +27,7 @@ def utf8_to_rgb(utf8_char: str, offset: int=0) -> tuple:
 def update_canvas(message: str, canvas: np.ndarray, offset: int):
     i = 0
     while i < len(message):
-        # TODO: instead of a single row, we can have this character represent multiple contiguous identical rows.
-        # there will always be < 999 rows and 999 columns, so
-        # first 3 digits can be original row number, 3 digits after can be amount of following repeated rows.
-        row = get_row_index(char=message[i], offset=offset)  # Get the row index
+        row_start_index, row_range_length = get_start_index_and_range_length(char=message[i], offset=offset)
         i += 1
         color = utf8_to_rgb(utf8_char=message[i], offset=offset)  # Convert the UTF-8 character to RGB
         i += 1
@@ -46,8 +43,8 @@ def update_canvas(message: str, canvas: np.ndarray, offset: int):
             while i + 1 < len(message) and message[i] != '\x01':
                 start, range_length = get_start_index_and_range_length(char=message[i], offset=offset)  # Get the start index of the range and range length
                 for j in range(start, start + range_length):
-                    # TODO: then I iterate over each row(s) here. currently we're just doing 1 row.
-                    canvas[row][j] = color
+                    for r in range(row_start_index, row_start_index + row_range_length):
+                        canvas[r][j] = color
                 i += 1
         i += 1
     return
