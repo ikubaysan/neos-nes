@@ -45,6 +45,8 @@ def update_canvas(message: str, canvas: np.ndarray, offset: int):
             while i + 1 < len(message) and message[i] != '\x01':  # Check for delimiters A and B
                 start = get_start_index(char=message[i], offset=offset)  # Get the start index of the range
                 i += 1
+                # if start < 0:
+                #     print("start is < 0")
                 range_length = get_range_length(char=message[i], offset=offset)  # Get the length of the range
                 for j in range(start, start + range_length):
                     canvas[row][j] = color

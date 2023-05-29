@@ -112,10 +112,10 @@ extern "C"
         bool changes_made_for_previous_row = false;
 
         std::unordered_map<int, std::vector<std::pair<int, int>>> color_ranges_map;
-        int current_color;
+        int range_current_color = -1;
 
         bool first_row = true;
-        bool ongoing_range = false;
+        bool range_is_ongoing = false;
 
         for (int i = 0; i < total_pixels; ++i, current_pixel += current_frame->shape[2])
         {
@@ -144,6 +144,7 @@ extern "C"
                     for (auto &range : color_ranges.second)
                     {
                         ss << encode_utf8(range.first) << encode_utf8(range.second);
+                        //std::cout << range.first << " " << range.second << std::endl;
                     }
                     ss << '\x01'; // Delimiter A (end of color)
                 }
@@ -156,19 +157,26 @@ extern "C"
                     first_row = false;
                 }
                 changes_made_for_previous_row = false;
-                ongoing_range = false;
+                range_is_ongoing = false;
+                range_current_color = -1;
             }
 
-            if (changed)
+            int rgb_int = get_pixel_color_code(current_pixel);
+            if (changed && rgb_int != range_current_color)
             {
-                int rgb_int = get_pixel_color_code(current_pixel);
+                // The color changed, and the pixel changed since the last frame, so we need to add a new range
                 color_ranges_map[rgb_int].push_back({col_idx, 1});
-                current_color = rgb_int;
-                ongoing_range = true;
+                range_current_color = rgb_int;
+                range_is_ongoing = true;
             }
-            else if (changed && color_ranges_map.find(current_color) != color_ranges_map.end() && ongoing_range)
+            else if (changed && color_ranges_map.find(range_current_color) != color_ranges_map.end() && range_is_ongoing)
             {
-                color_ranges_map[current_color].back().second++;
+                color_ranges_map[range_current_color].back().second++;
+            }
+            else
+            {
+                range_is_ongoing = false;
+                range_current_color = -1;
             }
         }
 
