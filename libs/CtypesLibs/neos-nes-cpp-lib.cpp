@@ -89,16 +89,14 @@ extern "C"
 
     void frame_to_string(Array3D *current_frame, Array3D *previous_frame, char *output)
     {
-        /*
-            frame->shape[0] = width
-            frame->shape[1] = height
-            frame->shape[2] = RGB channels
-        */
-
+        //frame->shape[0] = width
+        //frame->shape[1] = height
+        //frame->shape[2] = RGB channels
+        
         // std::cout << "width: " << current_frame->shape[1] << std::endl;
         // std::cout << "height: " << current_frame->shape[0] << std::endl;
         // std::cout << "channels: " << current_frame->shape[2] << std::endl;
-        // std::cout << "hello!!!" << std::endl;
+
         static Array3D *cached_previous_frame = nullptr;
         static std::string cached_output;
 
@@ -119,7 +117,6 @@ extern "C"
         // Use a map to store color and its associated ranges
         std::unordered_map<std::string, std::vector<std::pair<int, int>>> color_ranges_map;
         std::string current_color;
-
 
         bool first_row = true;
         bool ongoing_range = false;
@@ -170,7 +167,6 @@ extern "C"
                 changes_made_for_previous_row = false;
                 ongoing_range = false;
             }
-            
 
             // Only want ranges of changed pixels.
             if (changed && !ongoing_range)
@@ -200,30 +196,32 @@ extern "C"
         }
 
         // // Write out the color and its ranges for the final row
-        // if (!color_ranges_map.empty())
-        // {
-        //     ss << encode_utf8(current_frame->shape[0] - 1);
-        //     changes_made_for_previous_row = true;
-        // }
+        if (!color_ranges_map.empty())
+        {
+            // We need to write colors for the final row, whose index is total rows - 1
+            ss << encode_utf8(current_frame->shape[0] - 1);
+            changes_made_for_previous_row = true;
+        }
 
-        // for (auto &color_ranges : color_ranges_map)
-        // {
-        //     ss << color_ranges.first;
-        //     for (auto &range : color_ranges.second)
-        //     {
-        //         ss << encode_utf8(range.first) << encode_utf8(range.second);
-        //     }
-        //     ss << '\x11'; // Delimiter A (end of color)
-        // }
+        for (auto &color_ranges : color_ranges_map)
+        {
+            ss << color_ranges.first;
+            for (auto &range : color_ranges.second)
+            {
+                ss << encode_utf8(range.first) << encode_utf8(range.second);
+            }
+            ss << '\x01'; // Delimiter A (end of color)
+        }
 
-        // if (changes_made_for_previous_row)
-        //     ss << '\x12'; // Delimiter B (end of row)
+        if (changes_made_for_previous_row)
+            ss << '\x02'; // Delimiter B (end of row)
+        changes_made_for_previous_row = false;
+        ongoing_range = false;
 
         // Cache the output
         cached_output = ss.str();
         std::strncpy(output, cached_output.c_str(), cached_output.size());
         output[cached_output.size()] = '\0';
-
         cached_previous_frame = previous_frame;
     }
 }
