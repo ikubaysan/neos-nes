@@ -28,6 +28,10 @@ def update_canvas(message: str, canvas: np.ndarray, offset: int):
     i = 0
     while i < len(message):
         row_start_index, row_range_length = get_start_index_and_range_length(char=message[i], offset=offset)
+
+        # if len(message) > 1000:
+        #     print(f"row_start_index: {row_start_index} row_range_length: {row_range_length}")
+
         i += 1
         color = utf8_to_rgb(utf8_char=message[i], offset=offset)  # Convert the UTF-8 character to RGB
         i += 1
@@ -56,16 +60,6 @@ def get_start_index_and_range_length(char: str, offset: int) -> (int, int):
     start = combined // 1000
     range_length = combined % 1000
     return start, range_length
-
-def get_row_index(char: str, offset: int) -> int:
-    return ord(char) - offset
-
-def get_start_index(char: str, offset: int) -> int:
-    return ord(char) - offset
-
-def get_range_length(char: str, offset: int) -> int:
-    return ord(char) - offset
-
 
 class DisplayStrategy(ABC):
     def __init__(self, host: str, port: int, scale_percentage: int):
