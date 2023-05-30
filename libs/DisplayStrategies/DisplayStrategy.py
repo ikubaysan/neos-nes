@@ -26,14 +26,8 @@ def utf8_to_rgb(utf8_char: str, offset: int=0) -> tuple:
 
 def update_canvas(message: str, canvas: np.ndarray, offset: int):
     i = 0
-    prev_row_start_index = -1
     while i < len(message):
         row_start_index, row_range_length = get_start_index_and_range_length(char=message[i], offset=offset)
-
-        if row_start_index <= prev_row_start_index:
-            return
-        prev_row_start_index = row_start_index
-
         i += 1
         color = utf8_to_rgb(utf8_char=message[i], offset=offset)  # Convert the UTF-8 character to RGB
         i += 1

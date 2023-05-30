@@ -168,13 +168,13 @@ extern "C"
         std::unordered_map<int, int> identical_rows;
         find_identical_rows(current_frame, &identical_rows);
 
-        std::cout << "Ranges of identical rows: " << std::endl;
-        // Print the ranges of identical rows
-        for (std::unordered_map<int, int>::iterator it = identical_rows.begin(); it != identical_rows.end(); ++it)
-        {
-            std::cout << "Identical rows start at row " << it->first << " and count is: " << it->second << std::endl;
-        }
-        std::cout << "done\n" << std::endl;
+        // std::cout << "Ranges of identical rows: " << std::endl;
+        // // Print the ranges of identical rows
+        // for (std::unordered_map<int, int>::iterator it = identical_rows.begin(); it != identical_rows.end(); ++it)
+        // {
+        //     std::cout << "Identical rows start at row " << it->first << " and count is: " << it->second << std::endl;
+        // }
+        // std::cout << "done\n" << std::endl;
 
         static Array3D *cached_previous_frame = nullptr;
         static std::string cached_output;
@@ -246,7 +246,8 @@ extern "C"
                     }
                     else
                     {
-                        ss << encode_utf8((row_idx - 1) * 1000); // Add 3 zeros if the row isn't a start of a range of identical rows
+                        //ss << encode_utf8((row_idx - 1) * 1000); // Add 3 zeros if the row isn't a start of a range of identical rows
+                        ss << encode_utf8((row_idx - 1) * 1000 + 1);
                         // std::cout << "Row " << row_idx - 1 << " is not a start of a range of identical rows" << std::endl;
                     }
                 }
