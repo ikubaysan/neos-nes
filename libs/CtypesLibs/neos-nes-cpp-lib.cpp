@@ -301,9 +301,9 @@ extern "C"
         {
             // Write the index of the final row, which is the total amount of rows - 1
             int row_idx = current_frame->shape[0] - 1;
-            ss << encode_utf8((row_idx - 1) * 1000);
+            ss << encode_utf8((row_idx - 1) * 1000 + (identical_rows[row_idx - 1] + 1));
 
-            ss << encode_utf8(current_frame->shape[0] - 1);
+            //ss << encode_utf8(current_frame->shape[0] - 1);
             for (auto &color_ranges : color_ranges_map)
             {
                 // Write the color's unicode codepoint (SURROGATE_RANGE_SIZE may be added if this value is >= 0xD800)
