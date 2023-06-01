@@ -5,6 +5,7 @@ import asyncio
 import websockets
 import cv2
 import time
+import json
 import logging
 
 logger = logging.getLogger(__name__)
