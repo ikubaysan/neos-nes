@@ -96,11 +96,13 @@ class DisplayStrategy(ABC):
     async def receive_frames(self):
         uri = f"ws://{self.host}:{self.port}"
         logger.info(f"Using display strategy: {self.__class__.__name__}")
+        messages = []
         while True:
             try:
                 async with websockets.connect(uri, max_size=1024 * 1024 * 10) as websocket:
                     while True:
                         message = await websocket.recv()
+                        messages.append(message)
                         # Encoding as UTF-8, but in Logix we will decode the RGB character as UTF-32.
                         # This still works because the unicode code points are identical for both.
                         #print(message)
