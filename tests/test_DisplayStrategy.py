@@ -1,7 +1,9 @@
 import pytest
 import random
 from libs.DisplayStrategies.AdvancedDisplayStrategy import *
+from libs.DisplayStrategies.MessageViewer import *
 from libs.CtypesLibs.CPPFrameToString import FrameToString
+
 
 HOST = '10.0.0.147'
 PORT = 9001
@@ -217,40 +219,11 @@ def test_unicode_utf8_conversion():
 
 
 
-class MessageViewer:
-    def __init__(self, messages, display_strategy):
-        self.messages = messages
-        self.display_strategy = display_strategy
-        self.index = 0
-
-    def display_message(self):
-        message = self.messages[self.index]
-        self.display_strategy.update_canvas(message=message)
-        self.display_strategy.display()
-        time.sleep(1 / 24)
-
-    def handle_input(self):
-        key = self.display_strategy.get_key_input()
-        if key == 'q':
-            return False
-        elif key == 'KEY_LEFT':
-            self.index = max(0, self.index - 1)
-        elif key == 'KEY_RIGHT':
-            self.index = min(len(self.messages) - 1, self.index + 1)
-        return True
-
-    def start(self):
-        while self.handle_input():
-            self.display_message()
-
 
 def test_smb_title_demo_messages(advanced_display_strategy: AdvancedDisplayStrategy):
+    # Run this with -s
+    # a to move to prev frame, s to move to next frame. esc key to quit.
     messages = load_json_file("./files/smb_title_demo_messages.json")
-
-    for i in range(len(messages)):
-        message = messages[i]
-        advanced_display_strategy.update_canvas(message=message)
-        advanced_display_strategy.display()
-        time.sleep(1 / 24)
-
+    viewer = MessageViewer(messages, advanced_display_strategy)
+    viewer.start()
     return

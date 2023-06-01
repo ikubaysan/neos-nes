@@ -29,8 +29,8 @@ def update_canvas(message: str, canvas: np.ndarray, offset: int):
     while i < len(message):
         row_start_index, row_range_length = get_start_index_and_range_length(char=message[i], offset=offset)
 
-        if len(message) > 1000:
-            print(f"row_start_index: {row_start_index} row_range_length: {row_range_length}")
+        # if len(message) > 1000:
+        #     print(f"row_start_index: {row_start_index} row_range_length: {row_range_length}")
 
         i += 1
         color = utf8_to_rgb(utf8_char=message[i], offset=offset)  # Convert the UTF-8 character to RGB
@@ -81,6 +81,23 @@ class DisplayStrategy(ABC):
     def update_canvas(self, message: str, canvas=None):
         pass
 
+    def show_frame_for_messageviewer(self, window_name: str):
+        cv2.imshow(window_name, self.canvas)
+        return cv2.waitKey(1) & 0xFF
+
+    def get_key_input_for_messageviewer(self, window_name:str):
+        key_code = self.show_frame_for_messageviewer(window_name)
+        if key_code == 27:  # ESC key
+            return 'q'
+        elif key_code == ord("a"):  # Left arrow key
+            return 'KEY_LEFT'
+        elif key_code == ord("s"):  # Right arrow key
+            return 'KEY_RIGHT'
+        else:
+            return ''
+
+
+
     def show_frame(self, window_name: str):
         # Display the image represented by self.canvas in a window with the specified window_name
         cv2.imshow(window_name, self.canvas)
@@ -96,6 +113,7 @@ class DisplayStrategy(ABC):
     async def receive_frames(self):
         uri = f"ws://{self.host}:{self.port}"
         logger.info(f"Using display strategy: {self.__class__.__name__}")
+        # TODO: delete this, only here for debug! Is a memory leak!
         messages = []
         while True:
             try:

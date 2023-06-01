@@ -8,8 +8,6 @@ import time
 import os
 import json
 import logging
-import curses
-
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
