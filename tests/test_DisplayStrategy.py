@@ -1,5 +1,6 @@
 import pytest
 import random
+from libs.Helpers.GeneralHelpers import *
 from libs.DisplayStrategies.AdvancedDisplayStrategy import *
 from libs.DisplayStrategies.MessageViewer import *
 from libs.CtypesLibs.CPPFrameToString import FrameToString
@@ -19,8 +20,6 @@ def frame_to_string():
     return frame_to_string
 
 def test_update_canvas_1(advanced_display_strategy: AdvancedDisplayStrategy):
-    OFFSET = advanced_display_strategy.OFFSET
-
     delim_a = chr(1) # end of color
     delim_b = chr(2) # end of row
 
@@ -71,7 +70,6 @@ def test_update_canvas_1(advanced_display_strategy: AdvancedDisplayStrategy):
 
 
 def test_update_canvas_2(advanced_display_strategy: AdvancedDisplayStrategy):
-    OFFSET = advanced_display_strategy.OFFSET
     FRAME_WIDTH = DEFAULT_FRAME_WIDTH
     FRAME_HEIGHT = DEFAULT_FRAME_HEIGHT
 
@@ -223,24 +221,37 @@ def test_unicode_utf8_conversion():
 
 
 
-def test_smb_title_demo_messages(advanced_display_strategy: AdvancedDisplayStrategy):
+def test_smb_title_demo_messages():
     # Run this with -s
     # a to move to prev frame, s to move to next frame. esc key to quit.
     messages = load_json_file("./files/smb_title_demo_messages.json")
-    viewer = MessageViewer(messages, advanced_display_strategy)
+    viewer = MessageViewer(messages)
     viewer.start()
     return
 
 
-def test_smb_title_demo_messages_artifacting_debug(advanced_display_strategy: AdvancedDisplayStrategy):
+def test_smb_title_demo_messages_artifacting_debug():
     # Run this with -s
     # a to move to prev frame, s to move to next frame. esc key to quit.
     messages = load_json_file("./files/smb_title_demo_messages.json")
     viewer = MessageViewer(messages,
-                           advanced_display_strategy,
                            cycle_mode=True,
                            start_index=72,
                            end_index=115
+                           )
+    viewer.start()
+    return
+
+
+def test_smb_title_demo_messages_artifacting_debug_2():
+    # Run this with -s
+    # a to move to prev frame, s to move to next frame. esc key to quit.
+    messages = load_json_file("./files/smb_title_demo_messages.json")
+    viewer = MessageViewer(messages,
+                           display_canvas_every_update=True,
+                           cycle_mode=True,
+                           start_index=76,
+                           end_index=100
                            )
     viewer.start()
     return

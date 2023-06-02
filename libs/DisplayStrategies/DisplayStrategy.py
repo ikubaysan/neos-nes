@@ -24,14 +24,10 @@ def utf8_to_rgb(utf8_char: str, offset: int=0) -> tuple:
     b = (rgb_int & 0x3F) << 2
     return (r, g, b)
 
-def update_canvas(message: str, canvas: np.ndarray, offset: int):
+def update_canvas(message: str, canvas: np.ndarray, offset: int, display_canvas_every_update: bool=False):
     i = 0
     while i < len(message):
         row_start_index, row_range_length = get_start_index_and_range_length(char=message[i], offset=offset)
-
-        # if len(message) > 1000:
-        #     print(f"row_start_index: {row_start_index} row_range_length: {row_range_length}")
-
         i += 1
         color = utf8_to_rgb(utf8_char=message[i], offset=offset)  # Convert the UTF-8 character to RGB
         i += 1
@@ -49,6 +45,8 @@ def update_canvas(message: str, canvas: np.ndarray, offset: int):
                 for j in range(start, start + range_length):
                     for r in range(row_start_index, row_start_index + row_range_length):
                         canvas[r][j] = color
+                    if display_canvas_every_update:
+                        cv2.imshow('update_canvas debug', canvas)
                 i += 1
         i += 1
     return
@@ -71,7 +69,7 @@ class DisplayStrategy(ABC):
         # new_frame_height is the amount of rows to create
         # new_frame_width is the amount of columns to create
         # 3 RGB channels
-        self.canvas = np.zeros((self.new_frame_height, self.new_frame_width, 3), dtype=np.uint8)  # Initialize an empty canvas
+        self.reinitialize_canvas()
 
     @abstractmethod
     def display(self):
@@ -81,22 +79,8 @@ class DisplayStrategy(ABC):
     def update_canvas(self, message: str, canvas=None):
         pass
 
-    def show_frame_for_messageviewer(self, window_name: str):
-        cv2.imshow(window_name, self.canvas)
-        return cv2.waitKey(1) & 0xFF
-
-    def get_key_input_for_messageviewer(self, window_name:str):
-        key_code = self.show_frame_for_messageviewer(window_name)
-        if key_code == 27:  # ESC key
-            return 'q'
-        elif key_code == ord("a"):  # Left arrow key
-            return 'KEY_LEFT'
-        elif key_code == ord("s"):  # Right arrow key
-            return 'KEY_RIGHT'
-        else:
-            return ''
-
-
+    def reinitialize_canvas(self):
+        self.canvas = np.zeros((self.new_frame_height, self.new_frame_width, 3), dtype=np.uint8)
 
     def show_frame(self, window_name: str):
         # Display the image represented by self.canvas in a window with the specified window_name
