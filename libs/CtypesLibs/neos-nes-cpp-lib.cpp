@@ -105,10 +105,23 @@ extern "C"
      */
     int get_pixel_color_code(unsigned char *pixel_data)
     {
-        int r = pixel_data[0] >> 2;
-        int g = pixel_data[1] >> 2;
-        int b = pixel_data[2] >> 2;
+        int r = (pixel_data[0] >> 3) << 3;
+        int g = (pixel_data[1] >> 3) << 3;
+        int b = (pixel_data[2] >> 3) << 3;
         return b << 10 | g << 5 | r;
+    }
+
+    void apply_stable_rgb_values(Array3D *frame)
+    {
+        int total_pixels = frame->shape[0] * frame->shape[1];
+        unsigned char *current_pixel = frame->data;
+
+        for (int i = 0; i < total_pixels; ++i, current_pixel += frame->shape[2])
+        {
+            current_pixel[0] = (current_pixel[0] >> 3) << 3;
+            current_pixel[1] = (current_pixel[1] >> 3) << 3;
+            current_pixel[2] = (current_pixel[2] >> 3) << 3;
+        }
     }
 
     void find_identical_rows(Array3D *current_frame, std::unordered_map<int, int> *identical_rows)
@@ -168,16 +181,14 @@ extern "C"
         std::unordered_map<int, int> identical_rows;
         find_identical_rows(current_frame, &identical_rows);
 
-        // std::cout << "Ranges of identical rows: " << std::endl;
-        // // Print the ranges of identical rows
-        // for (std::unordered_map<int, int>::iterator it = identical_rows.begin(); it != identical_rows.end(); ++it)
-        // {
-        //     std::cout << "Identical rows start at row " << it->first << " and count is: " << it->second << std::endl;
-        // }
-        // std::cout << "done\n" << std::endl;
-
         static Array3D *cached_previous_frame = nullptr;
         static std::string cached_output;
+
+        apply_stable_rgb_values(current_frame);
+        if (previous_frame != nullptr)
+        {
+            apply_stable_rgb_values(previous_frame);
+        }
 
         if (previous_frame != nullptr && previous_frame == cached_previous_frame)
         {
@@ -236,8 +247,8 @@ extern "C"
                 {
                     // We have reached the row we were skipping to, so reset the skip_to_row_index
                     skip_to_row_index = -1;
-                    std::cout << "Reset skip_to_row_index to -1 at row " << row_idx << " col_idx " << col_idx << std::endl;
-                    std::cout << "color_ranges_map is empty: " << color_ranges_map.empty() << std::endl;
+                    // std::cout << "Reset skip_to_row_index to -1 at row " << row_idx << " col_idx " << col_idx << std::endl;
+                    // std::cout << "color_ranges_map is empty: " << color_ranges_map.empty() << std::endl;
                 }
             }
 

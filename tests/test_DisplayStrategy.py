@@ -172,38 +172,39 @@ def test_update_canvas_from_hardcoded_message(frame_to_string: FrameToString, ad
 
 
 def test_rgb_utf8_conversion():
-    # Test case 1: Red color
-    r = 255
-    g = 0
-    b = 0
-    utf8_char_0 = rgb_to_utf8(r, g, b)
+    # Test case 0: Red color
+    original_rgb_0 = (255, 0, 0)
+    stable_rgb_values_0 = get_stable_rgb_values(*original_rgb_0)
+    utf8_char_0 = rgb_to_utf8(*stable_rgb_values_0)
     rgb_tuple_0 = utf8_to_rgb(utf8_char_0)
-    original_rgb_0 = (r, g, b)
+    assert rgb_tuple_0 == stable_rgb_values_0, f"Test case 0 failed. Expected {stable_rgb_values_0}, got {rgb_tuple_0}"
 
-    # Test case 2: Green color
-    r = 0
-    g = 255
-    b = 0
-    utf8_char_1 = rgb_to_utf8(r, g, b)
+    # Test case 1: Green color
+    original_rgb_1 = (0, 255, 0)
+    stable_rgb_values_1 = get_stable_rgb_values(*original_rgb_1)
+    utf8_char_1 = rgb_to_utf8(*stable_rgb_values_1)
     rgb_tuple_1 = utf8_to_rgb(utf8_char_1)
-    original_rgb_1 = (r, g, b)
+    assert rgb_tuple_1 == stable_rgb_values_1, f"Test case 1 failed. Expected {stable_rgb_values_1}, got {rgb_tuple_1}"
 
-    # Test case 3: Blue color
-    r = 0
-    g = 0
-    b = 255
-    utf8_char_2 = rgb_to_utf8(r, g, b)
+    # Test case 2: Blue color
+    original_rgb_2 = (0, 0, 255)
+    stable_rgb_values_2 = get_stable_rgb_values(*original_rgb_2)
+    utf8_char_2 = rgb_to_utf8(*stable_rgb_values_2)
     rgb_tuple_2 = utf8_to_rgb(utf8_char_2)
-    original_rgb_2 = (r, g, b)
+    assert rgb_tuple_2 == stable_rgb_values_2, f"Test case 2 failed. Expected {stable_rgb_values_2}, got {rgb_tuple_2}"
 
-    # Test case 4: Custom color
-    r = 128
-    g = 64
-    b = 192
-    utf8_char_3 = rgb_to_utf8(r, g, b)
+    # Test case 3: Custom color
+    original_rgb_3 = (128, 64, 192)
+    stable_rgb_values_3 = get_stable_rgb_values(*original_rgb_3)
+    utf8_char_3 = rgb_to_utf8(*stable_rgb_values_3)
     rgb_tuple_3 = utf8_to_rgb(utf8_char_3)
-    original_rgb_3 = (r, g, b)
+    assert rgb_tuple_3 == stable_rgb_values_3, f"Test case 3 failed. Expected {stable_rgb_values_3}, got {rgb_tuple_3}"
+
     return
+
+
+
+
 
 
 def test_unicode_utf8_conversion():

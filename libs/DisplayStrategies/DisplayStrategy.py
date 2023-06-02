@@ -2,11 +2,20 @@ from abc import ABC, abstractmethod
 from ..Helpers.GeneralHelpers import *
 
 ## Orig
+
+def get_stable_rgb_values(r: int, g: int, b: int) -> tuple:
+    """Takes an RGB tuple and returns a modified RGB tuple such that
+    if you call rgb_to_utf8() with these values and then utf8_to_rgb(), you'd get the same values"""
+    r = (r >> 3) << 3
+    g = (g >> 3) << 3
+    b = (b >> 3) << 3
+    return (r, g, b)
+
 def rgb_to_utf8(r: int, g: int, b: int, offset: int=0) -> str:
     """Takes an RGB tuple and converts it into a single UTF-8 character"""
-    r >>= 2
-    g >>= 2
-    b >>= 2
+    r >>= 3
+    g >>= 3
+    b >>= 3
     rgb_int = b<<10 | g<<5 | r
     rgb_int += offset
     if rgb_int >= 0xD800:
@@ -19,9 +28,9 @@ def utf8_to_rgb(utf8_char: str, offset: int=0) -> tuple:
     if rgb_int >= 0xD800:
         rgb_int -= SURROGATE_RANGE_SIZE
     rgb_int -= offset
-    r = (rgb_int>>10 & 0x3F) << 2
-    g = (rgb_int>>5 & 0x3F) << 2
-    b = (rgb_int & 0x3F) << 2
+    r = (rgb_int & 0x1F) << 3
+    g = (rgb_int>>5 & 0x1F) << 3
+    b = (rgb_int>>10 & 0x1F) << 3
     return (r, g, b)
 
 def update_canvas(message: str, canvas: np.ndarray, offset: int, display_canvas_every_update: bool=False):
