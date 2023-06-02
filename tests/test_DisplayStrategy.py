@@ -178,30 +178,58 @@ def test_rgb_utf8_conversion():
     r = 255
     g = 0
     b = 0
-    utf8_char = rgb_to_utf8(r, g, b)
-    rgb_tuple = utf8_to_rgb(utf8_char)
+    utf8_char_0 = rgb_to_utf8(r, g, b)
+    rgb_tuple_0 = utf8_to_rgb(utf8_char_0)
+    original_rgb_0 = (r, g, b)
 
     # Test case 2: Green color
     r = 0
     g = 255
     b = 0
-    utf8_char = rgb_to_utf8(r, g, b)
-    rgb_tuple = utf8_to_rgb(utf8_char)
+    utf8_char_1 = rgb_to_utf8(r, g, b)
+    rgb_tuple_1 = utf8_to_rgb(utf8_char_1)
+    original_rgb_1 = (r, g, b)
 
     # Test case 3: Blue color
     r = 0
     g = 0
     b = 255
-    utf8_char = rgb_to_utf8(r, g, b)
-    rgb_tuple = utf8_to_rgb(utf8_char)
-
+    utf8_char_2 = rgb_to_utf8(r, g, b)
+    rgb_tuple_2 = utf8_to_rgb(utf8_char_2)
+    original_rgb_2 = (r, g, b)
 
     # Test case 4: Custom color
     r = 128
     g = 64
     b = 192
-    utf8_char = rgb_to_utf8(r, g, b)
-    rgb_tuple = utf8_to_rgb(utf8_char)
+    utf8_char_3 = rgb_to_utf8(r, g, b)
+    rgb_tuple_3 = utf8_to_rgb(utf8_char_3)
+    original_rgb_3 = (r, g, b)
+
+    # Additional common colors
+    # Test case 5: Yellow color
+    r = 255
+    g = 255
+    b = 0
+    utf8_char_4 = rgb_to_utf8(r, g, b)
+    rgb_tuple_4 = utf8_to_rgb(utf8_char_4)
+    original_rgb_4 = (r, g, b)
+
+    # Test case 6: Purple color
+    r = 128
+    g = 0
+    b = 128
+    utf8_char_5 = rgb_to_utf8(r, g, b)
+    rgb_tuple_5 = utf8_to_rgb(utf8_char_5)
+    original_rgb_5 = (r, g, b)
+
+    # Test case 7: Cyan color
+    r = 0
+    g = 255
+    b = 255
+    utf8_char_6 = rgb_to_utf8(r, g, b)
+    rgb_tuple_6 = utf8_to_rgb(utf8_char_6)
+    original_rgb_6 = (r, g, b)
     return
 
 
