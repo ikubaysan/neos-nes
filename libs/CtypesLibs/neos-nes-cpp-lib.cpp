@@ -179,7 +179,10 @@ extern "C"
         static Array3D *cached_previous_frame_unmodified = nullptr;
         static Array3D *cached_previous_frame_modified = nullptr;
 
-        static Array3D *current_frame_modified = nullptr;
+        Array3D *current_frame_modified = new Array3D;
+        *current_frame_modified = *current_frame_unmodified;
+        current_frame_modified->data = new unsigned char[current_frame_unmodified->shape[0] * current_frame_unmodified->shape[1] * current_frame_unmodified->shape[2]];
+        std::copy(current_frame_unmodified->data, current_frame_unmodified->data + current_frame_unmodified->shape[0] * current_frame_unmodified->shape[1] * current_frame_unmodified->shape[2], current_frame_modified->data);
 
         static std::string cached_output;
 
@@ -208,23 +211,18 @@ extern "C"
 
         for (int i = 0; i < total_pixels; ++i, current_pixel += current_frame_unmodified->shape[2])
         {
+            int rgb_int = get_pixel_color_code(current_pixel);
+
+            // Modify the current pixel's color in current_frame_modified
+            current_frame_modified->data[i * 3 + 0] = (rgb_int >> 10) & 0x1F;
+            current_frame_modified->data[i * 3 + 1] = (rgb_int >> 5) & 0x1F;
+            current_frame_modified->data[i * 3 + 2] = rgb_int & 0x1F;
+
             bool color_changed_at_current_pixel = true;
             if (previous_frame_unmodified)
             {
-                color_changed_at_current_pixel = false;
-                for (int j = 0; j < current_frame_unmodified->shape[2]; j++)
-                {
-                    if (current_pixel[j] != previous_pixel[j])
-                    {
-                        color_changed_at_current_pixel = true;
-                        break;
-                    }
-                }
-
-                // Or you can use memcmp:
-                // color_changed_at_current_pixel = memcmp(current_pixel, previous_pixel, current_frame->shape[2]) != 0;
-
-                previous_pixel += previous_frame_unmodified->shape[2];
+                int cached_rgb_int = get_pixel_color_code(cached_previous_frame_modified->data + i * 3);
+                color_changed_at_current_pixel = rgb_int != cached_rgb_int;
             }
 
             int row_idx = i / current_frame_unmodified->shape[1]; // Row index
@@ -240,8 +238,8 @@ extern "C"
                 {
                     // We have reached the row we were skipping to, so reset the skip_to_row_index
                     skip_to_row_index = -1;
-                    std::cout << "Reset skip_to_row_index to -1 at row " << row_idx << " col_idx " << col_idx << std::endl;
-                    std::cout << "color_ranges_map is empty: " << color_ranges_map.empty() << std::endl;
+                    // std::cout << "Reset skip_to_row_index to -1 at row " << row_idx << " col_idx " << col_idx << std::endl;
+                    // std::cout << "color_ranges_map is empty: " << color_ranges_map.empty() << std::endl;
                 }
             }
 
@@ -293,10 +291,9 @@ extern "C"
                 range_current_color = -1;
             }
 
-            int rgb_int = get_pixel_color_code(current_pixel);
             if (color_changed_at_current_pixel && rgb_int != range_current_color)
             {
-                // The color changed, and the pixel changed since the last frame, so we need to add a new range
+                // The color changed, and the pixel changed since the last frame, so we need to add a new range for this row starting at this column
                 color_ranges_map[rgb_int].push_back({col_idx, 1});
                 range_current_color = rgb_int;
                 range_is_ongoing = true;
@@ -335,8 +332,8 @@ extern "C"
             ss << '\x02'; // Delimiter B (end of row)
         }
 
-        cached_previous_frame_unmodified = current_frame_unmodified;
         cached_previous_frame_modified = current_frame_modified;
+        cached_previous_frame_unmodified = current_frame_unmodified;
 
         cached_output = ss.str();
         std::strncpy(output, cached_output.c_str(), cached_output.size());
