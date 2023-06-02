@@ -179,7 +179,7 @@ extern "C"
         static Array3D *cached_previous_frame = nullptr;
         static std::string cached_output;
 
-        if (previous_frame == cached_previous_frame)
+        if (previous_frame != nullptr && previous_frame == cached_previous_frame)
         {
             std::strncpy(output, cached_output.c_str(), cached_output.size());
             output[cached_output.size()] = '\0';
@@ -207,7 +207,19 @@ extern "C"
             bool changed = true;
             if (previous_frame)
             {
-                changed = memcmp(current_pixel, previous_pixel, current_frame->shape[2]) != 0;
+                changed = false;
+                for (int j = 0; j < current_frame->shape[2]; j++)
+                {
+                    if (current_pixel[j] != previous_pixel[j])
+                    {
+                        changed = true;
+                        break;
+                    }
+                }
+
+                // Or you can use memcmp:
+                // changed = memcmp(current_pixel, previous_pixel, current_frame->shape[2]) != 0;
+                
                 previous_pixel += previous_frame->shape[2];
             }
 

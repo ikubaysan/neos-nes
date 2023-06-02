@@ -1,3 +1,5 @@
+import numpy as np
+
 from libs.Websockets.BaseWebsocket import *
 from libs.CtypesLibs.CPPFrameToString import FrameToString
 

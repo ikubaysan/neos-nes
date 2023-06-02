@@ -30,7 +30,7 @@ class NESGameServer:
     # 60.0 with 100 scale runs fine, but is delayed for the viewer when there is substantial movement.
     MAX_RENDER_FRAME_RATE: float = 60.0
     # TODO: For some reason I'm getting 20 FPS if this is 30, and 30 FPS if this is 40.
-    MAX_PUBLISH_FRAME_RATE: float = 60.0
+    MAX_PUBLISH_FRAME_RATE: float = 24.0
     #MAX_PUBLISH_FRAME_RATE: float = 120.0
     SEND_FULL_FRAMES_ONLY: bool = False
     SCALE_PERCENTAGE: int = 100
@@ -110,9 +110,7 @@ class NESGameServer:
 
             # Has enough time has elapsed to publish a frame?
             if time.time() - self.last_frame_publish_time >= 1.0 / self.MAX_PUBLISH_FRAME_RATE:
-
                 state = state.astype('uint8')
-
                 if self.SEND_FULL_FRAMES_ONLY or time.time() - self.last_full_frame_time >= self.full_frame_interval:
                     utf8_data = self.frame.full_frame_to_string(state)
                     self.last_full_frame_time = time.time()

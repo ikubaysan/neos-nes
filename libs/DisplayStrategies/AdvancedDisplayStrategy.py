@@ -10,6 +10,6 @@ class AdvancedDisplayStrategy(DisplayStrategy):
     def update_canvas(self, message: str, canvas=None, display_canvas_every_update: bool=False):
         update_canvas(message=message,
                       canvas=canvas if canvas is not None else self.canvas,
-                      offset=self.OFFSET,
+                      offset=OFFSET,
                       display_canvas_every_update=display_canvas_every_update
                       )
