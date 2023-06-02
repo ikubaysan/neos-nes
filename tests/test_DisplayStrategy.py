@@ -227,3 +227,17 @@ def test_smb_title_demo_messages(advanced_display_strategy: AdvancedDisplayStrat
     viewer = MessageViewer(messages, advanced_display_strategy)
     viewer.start()
     return
+
+
+def test_smb_title_demo_messages_artifacting_debug(advanced_display_strategy: AdvancedDisplayStrategy):
+    # Run this with -s
+    # a to move to prev frame, s to move to next frame. esc key to quit.
+    messages = load_json_file("./files/smb_title_demo_messages.json")
+    viewer = MessageViewer(messages,
+                           advanced_display_strategy,
+                           cycle_mode=True,
+                           start_index=72,
+                           end_index=115
+                           )
+    viewer.start()
+    return
