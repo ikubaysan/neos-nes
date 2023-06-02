@@ -161,12 +161,12 @@ extern "C"
         }
     }
 
-    void frame_to_string(Array3D *current_frame, Array3D *previous_frame, char *output)
+    void frame_to_string(Array3D *current_frame_unmodified, Array3D *previous_frame_unmodified, char *output)
     {
 
         // Find ranges of identical rows
         std::unordered_map<int, int> identical_rows;
-        find_identical_rows(current_frame, &identical_rows);
+        find_identical_rows(current_frame_unmodified, &identical_rows);
 
         // std::cout << "Ranges of identical rows: " << std::endl;
         // // Print the ranges of identical rows
@@ -176,10 +176,14 @@ extern "C"
         // }
         // std::cout << "done\n" << std::endl;
 
-        static Array3D *cached_previous_frame = nullptr;
+        static Array3D *cached_previous_frame_unmodified = nullptr;
+        static Array3D *cached_previous_frame_modified = nullptr;
+
+        static Array3D *current_frame_modified = nullptr;
+
         static std::string cached_output;
 
-        if (previous_frame != nullptr && previous_frame == cached_previous_frame)
+        if (cached_previous_frame_unmodified != nullptr && cached_previous_frame_unmodified == previous_frame_unmodified)
         {
             std::strncpy(output, cached_output.c_str(), cached_output.size());
             output[cached_output.size()] = '\0';
@@ -188,9 +192,9 @@ extern "C"
 
         std::ostringstream ss;
 
-        int total_pixels = current_frame->shape[0] * current_frame->shape[1];
-        unsigned char *current_pixel = current_frame->data;
-        unsigned char *previous_pixel = previous_frame ? previous_frame->data : nullptr;
+        int total_pixels = current_frame_unmodified->shape[0] * current_frame_unmodified->shape[1];
+        unsigned char *current_pixel = current_frame_unmodified->data;
+        unsigned char *previous_pixel = previous_frame_unmodified ? previous_frame_unmodified->data : nullptr;
         bool changes_made_for_previous_row = false;
 
         std::unordered_map<int, std::vector<std::pair<int, int>>> color_ranges_map;
@@ -202,13 +206,13 @@ extern "C"
         int skip_to_row_index = -1;
         //std::cout << "hello" << std::endl;
 
-        for (int i = 0; i < total_pixels; ++i, current_pixel += current_frame->shape[2])
+        for (int i = 0; i < total_pixels; ++i, current_pixel += current_frame_unmodified->shape[2])
         {
             bool color_changed_at_current_pixel = true;
-            if (previous_frame)
+            if (previous_frame_unmodified)
             {
                 color_changed_at_current_pixel = false;
-                for (int j = 0; j < current_frame->shape[2]; j++)
+                for (int j = 0; j < current_frame_unmodified->shape[2]; j++)
                 {
                     if (current_pixel[j] != previous_pixel[j])
                     {
@@ -220,11 +224,11 @@ extern "C"
                 // Or you can use memcmp:
                 // color_changed_at_current_pixel = memcmp(current_pixel, previous_pixel, current_frame->shape[2]) != 0;
 
-                previous_pixel += previous_frame->shape[2];
+                previous_pixel += previous_frame_unmodified->shape[2];
             }
 
-            int row_idx = i / current_frame->shape[1]; // Row index
-            int col_idx = i % current_frame->shape[1]; // Column index
+            int row_idx = i / current_frame_unmodified->shape[1]; // Row index
+            int col_idx = i % current_frame_unmodified->shape[1]; // Column index
 
             if (skip_to_row_index != -1)
             {
@@ -312,7 +316,7 @@ extern "C"
         if (!color_ranges_map.empty())
         {
             // Write the index of the final row, which is the total amount of rows - 1
-            int row_idx = current_frame->shape[0] - 1;
+            int row_idx = current_frame_unmodified->shape[0] - 1;
             ss << encode_utf8((row_idx - 1) * 1000 + (identical_rows[row_idx - 1] + 1));
 
             //ss << encode_utf8(current_frame->shape[0] - 1);
@@ -331,7 +335,9 @@ extern "C"
             ss << '\x02'; // Delimiter B (end of row)
         }
 
-        cached_previous_frame = previous_frame;
+        cached_previous_frame_unmodified = current_frame_unmodified;
+        cached_previous_frame_modified = current_frame_modified;
+
         cached_output = ss.str();
         std::strncpy(output, cached_output.c_str(), cached_output.size());
         output[cached_output.size()] = '\0';
