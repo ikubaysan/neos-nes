@@ -74,3 +74,10 @@ When decoding the messages in python/logix to display our frame, we need to iter
 * After a color character, we read a range's start column as a character, and the next character will be the span. Apply the color to the pixels in that range for the row, and then the next character will be another range's start column UNLESS it's delim A, which indicates there are no more ranges of columns of pixels to apply this color to in this row.
 * If the character was delim A, then we need to check if the next character is delim B. If so, then we are done applying all the colors to this row. But if not, then the character is a color, and the next characters are ranges of columns we need to apply this color to for this row, like before.
 * Once we're done applying all the colors to this row, then the next character will be a different row index, and the cycle repeats.
+
+
+## Running tests
+
+Run a specific test:
+
+`python -m pytest -k test_smb_title_demo_messages_artifacting_debug test_DisplayStrategy.py`

@@ -205,31 +205,6 @@ def test_rgb_utf8_conversion():
     utf8_char_3 = rgb_to_utf8(r, g, b)
     rgb_tuple_3 = utf8_to_rgb(utf8_char_3)
     original_rgb_3 = (r, g, b)
-
-    # Additional common colors
-    # Test case 5: Yellow color
-    r = 255
-    g = 255
-    b = 0
-    utf8_char_4 = rgb_to_utf8(r, g, b)
-    rgb_tuple_4 = utf8_to_rgb(utf8_char_4)
-    original_rgb_4 = (r, g, b)
-
-    # Test case 6: Purple color
-    r = 128
-    g = 0
-    b = 128
-    utf8_char_5 = rgb_to_utf8(r, g, b)
-    rgb_tuple_5 = utf8_to_rgb(utf8_char_5)
-    original_rgb_5 = (r, g, b)
-
-    # Test case 7: Cyan color
-    r = 0
-    g = 255
-    b = 255
-    utf8_char_6 = rgb_to_utf8(r, g, b)
-    rgb_tuple_6 = utf8_to_rgb(utf8_char_6)
-    original_rgb_6 = (r, g, b)
     return
 
 

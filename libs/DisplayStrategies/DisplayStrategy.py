@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
+from ..Helpers.GeneralHelpers import *
 
-from libs.Helpers.GeneralHelpers import *
-
+## Orig
 def rgb_to_utf8(r: int, g: int, b: int, offset: int=0) -> str:
     """Takes an RGB tuple and converts it into a single UTF-8 character"""
     r >>= 2

@@ -8,20 +8,20 @@ class FrameWebsocket(BaseWebsocket):
     def __init__(self, host, port):
         super().__init__(host, port)
         self.frame_websockets = set()
-        self.last_frame = None
+        self.previous_frame = None
         self.cpp_frame_to_string = FrameToString()
 
-    def _frame_to_string_common(self, current_frame, last_frame) -> str:
-        message = self.cpp_frame_to_string.get_string(current_frame, last_frame)
-        self.last_frame = current_frame
+    def _frame_to_string_common(self, current_frame, previous_frame) -> str:
+        message = self.cpp_frame_to_string.get_string(current_frame, previous_frame)
+        self.previous_frame = current_frame
         return message
 
     def full_frame_to_string(self, current_frame):
-        full_frame_string = self._frame_to_string_common(current_frame, last_frame=None)
+        full_frame_string = self._frame_to_string_common(current_frame, previous_frame=None)
         return full_frame_string
 
     def frame_to_string(self, current_frame):
-        message = self._frame_to_string_common(current_frame, last_frame=self.last_frame)
+        message = self._frame_to_string_common(current_frame, previous_frame=self.previous_frame)
         return message
 
     async def broadcast(self, message):
