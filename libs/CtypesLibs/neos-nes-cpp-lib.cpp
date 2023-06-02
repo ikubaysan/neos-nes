@@ -179,7 +179,7 @@ extern "C"
         static Array3D *cached_previous_frame = nullptr;
         static std::string cached_output;
 
-        if (previous_frame == cached_previous_frame)
+        if (previous_frame != nullptr && previous_frame == cached_previous_frame)
         {
             std::strncpy(output, cached_output.c_str(), cached_output.size());
             output[cached_output.size()] = '\0';
@@ -204,10 +204,22 @@ extern "C"
 
         for (int i = 0; i < total_pixels; ++i, current_pixel += current_frame->shape[2])
         {
-            bool changed = true;
+            bool color_changed_at_current_pixel = true;
             if (previous_frame)
             {
-                changed = memcmp(current_pixel, previous_pixel, current_frame->shape[2]) != 0;
+                color_changed_at_current_pixel = false;
+                for (int j = 0; j < current_frame->shape[2]; j++)
+                {
+                    if (current_pixel[j] != previous_pixel[j])
+                    {
+                        color_changed_at_current_pixel = true;
+                        break;
+                    }
+                }
+
+                // Or you can use memcmp:
+                // color_changed_at_current_pixel = memcmp(current_pixel, previous_pixel, current_frame->shape[2]) != 0;
+
                 previous_pixel += previous_frame->shape[2];
             }
 
@@ -278,14 +290,14 @@ extern "C"
             }
 
             int rgb_int = get_pixel_color_code(current_pixel);
-            if (changed && rgb_int != range_current_color)
+            if (color_changed_at_current_pixel && rgb_int != range_current_color)
             {
                 // The color changed, and the pixel changed since the last frame, so we need to add a new range
                 color_ranges_map[rgb_int].push_back({col_idx, 1});
                 range_current_color = rgb_int;
                 range_is_ongoing = true;
             }
-            else if (changed && color_ranges_map.find(range_current_color) != color_ranges_map.end() && range_is_ongoing)
+            else if (color_changed_at_current_pixel && color_ranges_map.find(range_current_color) != color_ranges_map.end() && range_is_ongoing)
             {
                 color_ranges_map[range_current_color].back().second++;
             }
