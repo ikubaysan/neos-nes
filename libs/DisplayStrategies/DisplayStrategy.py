@@ -31,7 +31,7 @@ def utf8_to_rgb(utf8_char: str, offset: int=0) -> tuple:
     r = (rgb_int & 0x1F) << 3
     g = (rgb_int>>5 & 0x1F) << 3
     b = (rgb_int>>10 & 0x1F) << 3
-    return (r, g, b)
+    return (b, r, g)
 
 def update_canvas(message: str, canvas: np.ndarray, offset: int, display_canvas_every_update: bool=False):
     i = 0

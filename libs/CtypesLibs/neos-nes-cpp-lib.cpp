@@ -184,7 +184,9 @@ extern "C"
         static Array3D *cached_previous_frame = nullptr;
         static std::string cached_output;
 
-        apply_stable_rgb_values(current_frame);
+
+        // TODO: Having this uncommented causes artifacting!! Why?
+        //apply_stable_rgb_values(current_frame);
         if (previous_frame != nullptr)
         {
             apply_stable_rgb_values(previous_frame);
