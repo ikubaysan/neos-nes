@@ -164,16 +164,11 @@ extern "C"
     }
 
     // Function to generate RGBInts for a given frame
-    FrameRGBInts create_frame_rgb_ints(Array3D *frame)
+    void create_frame_rgb_ints(Array3D *frame, FrameRGBInts &frame_rgb_ints)
     {
-        // Create a 2D vector to store the RGB integer values of each pixel in the frame
-        FrameRGBInts frame_rgb_ints(frame->shape[0], std::vector<int>(frame->shape[1]));
-
         // Iterate over each row and column of the frame
-        // Iterate over each row of the frame
         for (int i = 0; i < frame->shape[0]; ++i)
         {
-            // Iterate over each column of the frame
             for (int j = 0; j < frame->shape[1]; ++j)
             {
                 // Get the pixel data (RGB values) of the current pixel
@@ -183,16 +178,14 @@ extern "C"
                 frame_rgb_ints[i][j] = get_pixel_color_code(pixel_data);
             }
         }
-
-        // Return the vector containing the RGB integer values of each pixel in the frame
-        return frame_rgb_ints;
     }
 
     void frame_to_string(Array3D *current_frame_unmodified, Array3D *previous_frame_unmodified, char *output)
     {
-
         // Create RGBInts for the current and previous frames
-        FrameRGBInts current_frame_rgb_ints = create_frame_rgb_ints(current_frame_unmodified);
+        FrameRGBInts current_frame_rgb_ints(current_frame_unmodified->shape[0], std::vector<int>(current_frame_unmodified->shape[1]));
+        create_frame_rgb_ints(current_frame_unmodified, current_frame_rgb_ints);
+
         FrameRGBInts previous_frame_rgb_ints;
 
         // Find ranges of identical rows
@@ -206,15 +199,9 @@ extern "C"
 
         if (previous_frame_unmodified)
         {
-            previous_frame_rgb_ints = create_frame_rgb_ints(previous_frame_unmodified);
+            previous_frame_rgb_ints.resize(previous_frame_unmodified->shape[0], std::vector<int>(previous_frame_unmodified->shape[1]));
+            create_frame_rgb_ints(previous_frame_unmodified, previous_frame_rgb_ints);
         }
-
-        // if (cached_previous_frame_unmodified != nullptr && cached_previous_frame_unmodified == previous_frame_unmodified)
-        // {
-        //     std::strncpy(output, cached_output.c_str(), cached_output.size());
-        //     output[cached_output.size()] = '\0';
-        //     return;
-        // }
 
         std::ostringstream ss;
 
@@ -239,24 +226,8 @@ extern "C"
             bool color_changed_at_current_pixel = true;
             if (previous_frame_unmodified)
             {
-                color_changed_at_current_pixel = false;
-
-                // Increase to reduce artifacting
-                int look_ahead_behind = 20; // Number of pixels to look ahead/behind
-                int start = std::max(0, col_idx - look_ahead_behind);
-                int end = std::min(current_frame_unmodified->shape[1], col_idx + look_ahead_behind);
-
-                for (int j = start; j < end; ++j)
-                {
-                    if (current_frame_rgb_ints[row_idx][j] != previous_frame_rgb_ints[row_idx][j])
-                    {
-                        color_changed_at_current_pixel = true;
-                        break;
-                    }
-                }
-
                 // If you don't care about artifacting, you can just do this instead of all of the above:
-                // color_changed_at_current_pixel = current_frame_rgb_ints[row_idx][col_idx] != previous_frame_rgb_ints[row_idx][col_idx];
+                color_changed_at_current_pixel = current_frame_rgb_ints[row_idx][col_idx] != previous_frame_rgb_ints[row_idx][col_idx];
             }
 
             if (skip_to_row_index != -1)
