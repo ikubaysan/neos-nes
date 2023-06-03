@@ -194,24 +194,9 @@ extern "C"
 
     void frame_to_string(Array3D *current_frame_unmodified, Array3D *previous_frame_unmodified, char *output)
     {
-        // Create RGBInts for the current frame
-        FrameRGBInts current_frame_rgb_ints(current_frame_unmodified->shape[0], std::vector<int>(current_frame_unmodified->shape[1]));
-        create_frame_rgb_ints(current_frame_unmodified, current_frame_rgb_ints);
-
-        FrameRGBInts previous_frame_rgb_ints;
-
-        // Define a set to store rows with at least one changed pixel
-        std::unordered_set<int> changed_rows;
-
-        // Find ranges of identical rows
-        std::unordered_map<int, int> identical_rows;
-        find_identical_rows(current_frame_unmodified, &identical_rows);
-
         static Array3D *cached_previous_frame_unmodified = nullptr;
         static Array3D *current_frame_modified = nullptr;
-
         static std::string cached_output;
-
         // If the current frame is identical to the previous frame, we can reuse the previous output
         if (cached_previous_frame_unmodified != nullptr && cached_previous_frame_unmodified == previous_frame_unmodified)
         {
@@ -220,11 +205,22 @@ extern "C"
             return;
         }
 
+        // Create RGBInts for the current frame
+        FrameRGBInts current_frame_rgb_ints(current_frame_unmodified->shape[0], std::vector<int>(current_frame_unmodified->shape[1]));
+        create_frame_rgb_ints(current_frame_unmodified, current_frame_rgb_ints);
+
+        FrameRGBInts previous_frame_rgb_ints;
+        std::unordered_set<int> changed_rows;
+
         if (previous_frame_unmodified)
         {
             previous_frame_rgb_ints.resize(previous_frame_unmodified->shape[0], std::vector<int>(previous_frame_unmodified->shape[1]));
             create_frame_rgb_ints(previous_frame_unmodified, previous_frame_rgb_ints, &current_frame_rgb_ints, &changed_rows);
         }
+
+        // Find ranges of identical rows
+        std::unordered_map<int, int> identical_rows;
+        find_identical_rows(current_frame_unmodified, &identical_rows);
 
         std::ostringstream ss;
 
