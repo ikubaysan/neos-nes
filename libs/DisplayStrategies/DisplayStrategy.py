@@ -24,32 +24,57 @@ def utf8_to_rgb(utf8_char: str, offset: int=0) -> tuple:
     b = (rgb_int & 0x3F) << 2
     return (r, g, b)
 
-def update_canvas(message: str, canvas: np.ndarray, offset: int, display_canvas_every_update: bool=False):
+
+def update_canvas(message: str, canvas: np.ndarray, offset: int, display_canvas_every_update: bool = False):
     i = 0
+    # Iterate over the entire message
     while i < len(message):
+        # Each message starts with a character encoding the starting row index and the row range length
         row_start_index, row_range_length = get_start_index_and_range_length(char=message[i], offset=offset)
         i += 1
-        color = utf8_to_rgb(utf8_char=message[i], offset=offset)  # Convert the UTF-8 character to RGB
+
+        # The next character represents a color. Convert it to RGB.
+        color = utf8_to_rgb(utf8_char=message[i], offset=offset)
         i += 1
-        while i < len(message):  # Check for delimiter A (end of color)
+
+        # Continue iterating over the message until we reach the delimiter A ('\x01'), which signifies the end of color
+        while i < len(message):
             if message[i] == '\x01':
                 i += 1
+
+                # Check for delimiter B ('\x02'), which signifies the end of a row segment
                 if message[i] == '\x02':
                     break
                 else:
-                    # This is a new color for the same row, and we need to handle its ranges.
-                    color = utf8_to_rgb(utf8_char=message[i], offset=offset)  # Convert the UTF-8 character to RGB
+                    # We've encountered a new color for the same row, so update the color and process the ranges for this color
+                    color = utf8_to_rgb(utf8_char=message[i], offset=offset)
                     i += 1
-            while i + 1 < len(message) and message[i] != '\x01':
-                start, range_length = get_start_index_and_range_length(char=message[i], offset=offset)  # Get the start index of the range and range length
+
+            # Iterate over the characters until we reach another color change or the end of the row segment
+            while message[i] != '\x01':
+
+                # If we've reached the end of the message, break out of the loop
+                if i + 1 >= len(message):
+                    # Or technically we could just return here
+                    break
+
+                # Each character represents a starting column index and a range length.
+                # We'll apply the current color to this range in the canvas.
+                start, range_length = get_start_index_and_range_length(char=message[i], offset=offset)
+
+                # Iterate over each column in the range and each row in the row range, setting the color in the canvas
                 for j in range(start, start + range_length):
                     for r in range(row_start_index, row_start_index + row_range_length):
                         canvas[r][j] = color
+
+                    # If requested, update the displayed canvas after each range
                     if display_canvas_every_update:
                         cv2.imshow('update_canvas debug', canvas)
                 i += 1
+        # After processing all colors and ranges for a row segment, move to the next segment
         i += 1
     return
+
 
 def get_start_index_and_range_length(char: str, offset: int) -> (int, int):
     combined = ord(char) - offset
