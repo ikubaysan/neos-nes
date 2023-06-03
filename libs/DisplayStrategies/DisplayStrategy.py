@@ -2,28 +2,52 @@ from abc import ABC, abstractmethod
 from ..Helpers.GeneralHelpers import *
 
 ## Orig
-def rgb_to_utf8(r: int, g: int, b: int, offset: int=0) -> str:
-    """Takes an RGB tuple and converts it into a single UTF-8 character"""
-    r >>= 2
-    g >>= 2
-    b >>= 2
-    rgb_int = b<<10 | g<<5 | r
-    rgb_int += offset
-    if rgb_int >= 0xD800:
-        rgb_int += SURROGATE_RANGE_SIZE
-    return chr(rgb_int)
+def rgb_to_utf8(r: int, g: int, b: int, offset: int = 0) -> str:
+    """Takes an RGB tuple and converts it into two UTF-8 characters"""
+    # Combine the R and G values into one six-digit number, and the B value into a three-digit number
+    # rg_int = r * 1000 + g + offset
+    # b_int = b + offset
 
-def utf8_to_rgb(utf8_char: str, offset: int=0) -> tuple:
-    """Converts a UTF-8 character to an RGB tuple"""
-    rgb_int = ord(utf8_char)
-    if rgb_int >= 0xD800:
-        rgb_int -= SURROGATE_RANGE_SIZE
-    rgb_int -= offset
-    r = (rgb_int>>10 & 0x3F) << 2
-    g = (rgb_int>>5 & 0x3F) << 2
-    b = (rgb_int & 0x3F) << 2
-    return (r, g, b)
+    # r and b are intentionally switched so cv displays them correctly.
+    # Above is the "proper" implementation for RGB.
+    rg_int = b * 1000 + g + offset
+    b_int = r + offset
 
+    if rg_int > 0xD800:
+        rg_int += SURROGATE_RANGE_SIZE
+    if b_int > 0xD800:
+        b_int += SURROGATE_RANGE_SIZE
+
+    # Convert these numbers into their corresponding Unicode code points
+    rg_char = chr(rg_int)
+    b_char = chr(b_int)
+
+    # Return the two UTF-8 characters as a string
+    return rg_char + b_char
+
+
+def utf8_to_rgb(utf8_chars: str, offset: int = 0) -> tuple:
+    """Converts two UTF-8 characters to an RGB tuple"""
+    # Convert the UTF-8 characters back into their original numbers
+    rg_int = ord(utf8_chars[0])
+
+    if rg_int >= 0xD800:
+        rg_int -= SURROGATE_RANGE_SIZE
+    rg_int -= offset
+
+    b_int = ord(utf8_chars[1])
+    if b_int >= 0xD800:
+        b_int -= SURROGATE_RANGE_SIZE
+    b_int -= offset
+
+    # Extract the R, G, and B values
+    r = rg_int // 1000
+    g = rg_int % 1000
+    b = b_int
+
+    # r and b are intentionally switched so cv displays them correctly.
+    # The "proper" RGB implementation is (r, g, b)
+    return (b, g, r)
 
 def update_canvas(message: str, canvas: np.ndarray, offset: int, display_canvas_every_update: bool = False):
     i = 0
@@ -33,9 +57,9 @@ def update_canvas(message: str, canvas: np.ndarray, offset: int, display_canvas_
         row_start_index, row_range_length = get_start_index_and_range_length(char=message[i], offset=offset)
         i += 1
 
-        # The next character represents a color. Convert it to RGB.
-        color = utf8_to_rgb(utf8_char=message[i], offset=offset)
-        i += 1
+        # The next two characters represent a color. Convert it to RGB.
+        color = utf8_to_rgb(utf8_chars=message[i:i+2], offset=offset)
+        i += 2  # Increase by 2 as we are now reading two characters for color
 
         # Continue iterating over the message until we reach the delimiter A ('\x01'), which signifies the end of color
         while i < len(message):
@@ -47,10 +71,11 @@ def update_canvas(message: str, canvas: np.ndarray, offset: int, display_canvas_
                     break
                 else:
                     # We've encountered a new color for the same row, so update the color and process the ranges for this color
-                    color = utf8_to_rgb(utf8_char=message[i], offset=offset)
-                    i += 1
+                    color = utf8_to_rgb(utf8_chars=message[i:i+2], offset=offset)
+                    i += 2  # Increase by 2 as we are now reading two characters for color
 
             # Iterate over the characters until we reach another color change or the end of the row segment
+            # I could also write this as "while message[i] != '\x01' and i + 1 < len(message)"
             while message[i] != '\x01':
 
                 # If we've reached the end of the message, break out of the loop
