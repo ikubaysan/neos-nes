@@ -212,16 +212,18 @@ extern "C"
 
         static std::string cached_output;
 
+        // If the current frame is identical to the previous frame, we can reuse the previous output
+        if (cached_previous_frame_unmodified != nullptr && cached_previous_frame_unmodified == previous_frame_unmodified)
+        {
+            std::strncpy(output, cached_output.c_str(), cached_output.size());
+            output[cached_output.size()] = '\0';
+            return;
+        }
+
         if (previous_frame_unmodified)
         {
             previous_frame_rgb_ints.resize(previous_frame_unmodified->shape[0], std::vector<int>(previous_frame_unmodified->shape[1]));
             create_frame_rgb_ints(previous_frame_unmodified, previous_frame_rgb_ints, &current_frame_rgb_ints, &changed_rows);
-            // std::cout << "Changed Rows: ";
-            // for (const auto &row : changed_rows)
-            // {
-            //     std::cout << row << " ";
-            // }
-            // std::cout << std::endl;
         }
 
         std::ostringstream ss;
