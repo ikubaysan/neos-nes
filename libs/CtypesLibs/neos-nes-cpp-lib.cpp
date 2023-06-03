@@ -20,6 +20,8 @@ extern "C"
         bool *data;
     } BoolArray;
 
+    typedef std::vector<std::vector<int>> FrameRGBInts; // NEW: For storing rgb_int of each pixel
+
     std::unordered_map<int, std::string> rgb_to_utf8_cache;
     const int OFFSET = 16;
     const int SURROGATE_RANGE_SIZE = 2048;
@@ -161,37 +163,57 @@ extern "C"
         }
     }
 
+    // Function to generate RGBInts for a given frame
+    FrameRGBInts create_frame_rgb_ints(Array3D *frame)
+    {
+        // Create a 2D vector to store the RGB integer values of each pixel in the frame
+        FrameRGBInts frame_rgb_ints(frame->shape[0], std::vector<int>(frame->shape[1]));
+
+        // Iterate over each row and column of the frame
+        for (int i = 0; i < frame->shape[0]; ++i)
+        {
+            for (int j = 0; j < frame->shape[1]; ++j)
+            {
+                // Get the pixel data (RGB values) of the current pixel
+                unsigned char *pixel_data = frame->data + (i * frame->shape[1] + j) * frame->shape[2];
+
+                // Convert the pixel data to an RGB integer value and store it in the frame_rgb_ints vector
+                frame_rgb_ints[i][j] = get_pixel_color_code(pixel_data);
+            }
+        }
+
+        // Return the vector containing the RGB integer values of each pixel in the frame
+        return frame_rgb_ints;
+    }
+
     void frame_to_string(Array3D *current_frame_unmodified, Array3D *previous_frame_unmodified, char *output)
     {
+
+        // Create RGBInts for the current and previous frames
+        FrameRGBInts current_frame_rgb_ints = create_frame_rgb_ints(current_frame_unmodified);
+        FrameRGBInts previous_frame_rgb_ints;
+
 
         // Find ranges of identical rows
         std::unordered_map<int, int> identical_rows;
         find_identical_rows(current_frame_unmodified, &identical_rows);
 
-        // std::cout << "Ranges of identical rows: " << std::endl;
-        // // Print the ranges of identical rows
-        // for (std::unordered_map<int, int>::iterator it = identical_rows.begin(); it != identical_rows.end(); ++it)
-        // {
-        //     std::cout << "Identical rows start at row " << it->first << " and count is: " << it->second << std::endl;
-        // }
-        // std::cout << "done\n" << std::endl;
-
         static Array3D *cached_previous_frame_unmodified = nullptr;
-        static Array3D *cached_previous_frame_modified = nullptr;
-
-        Array3D *current_frame_modified = new Array3D;
-        *current_frame_modified = *current_frame_unmodified;
-        current_frame_modified->data = new unsigned char[current_frame_unmodified->shape[0] * current_frame_unmodified->shape[1] * current_frame_unmodified->shape[2]];
-        std::copy(current_frame_unmodified->data, current_frame_unmodified->data + current_frame_unmodified->shape[0] * current_frame_unmodified->shape[1] * current_frame_unmodified->shape[2], current_frame_modified->data);
+        static Array3D *current_frame_modified = nullptr;
 
         static std::string cached_output;
 
-        if (cached_previous_frame_unmodified != nullptr && cached_previous_frame_unmodified == previous_frame_unmodified)
+        if (previous_frame_unmodified)
         {
-            std::strncpy(output, cached_output.c_str(), cached_output.size());
-            output[cached_output.size()] = '\0';
-            return;
+            previous_frame_rgb_ints = create_frame_rgb_ints(previous_frame_unmodified);
         }
+
+        // if (cached_previous_frame_unmodified != nullptr && cached_previous_frame_unmodified == previous_frame_unmodified)
+        // {
+        //     std::strncpy(output, cached_output.c_str(), cached_output.size());
+        //     output[cached_output.size()] = '\0';
+        //     return;
+        // }
 
         std::ostringstream ss;
 
@@ -205,28 +227,19 @@ extern "C"
 
         bool first_row = true;
         bool range_is_ongoing = false;
-        
+
         int skip_to_row_index = -1;
-        //std::cout << "hello" << std::endl;
+        // std::cout << "hello" << std::endl;
 
         for (int i = 0; i < total_pixels; ++i, current_pixel += current_frame_unmodified->shape[2])
         {
-            int rgb_int = get_pixel_color_code(current_pixel);
-
-            // Modify the current pixel's color in current_frame_modified
-            current_frame_modified->data[i * 3 + 0] = (rgb_int >> 10) & 0x1F;
-            current_frame_modified->data[i * 3 + 1] = (rgb_int >> 5) & 0x1F;
-            current_frame_modified->data[i * 3 + 2] = rgb_int & 0x1F;
-
+            int row_idx = i / current_frame_unmodified->shape[1]; // Row index
+            int col_idx = i % current_frame_unmodified->shape[1]; // Column index
             bool color_changed_at_current_pixel = true;
             if (previous_frame_unmodified)
             {
-                int cached_rgb_int = get_pixel_color_code(cached_previous_frame_modified->data + i * 3);
-                color_changed_at_current_pixel = rgb_int != cached_rgb_int;
+                color_changed_at_current_pixel = (current_frame_rgb_ints[row_idx][col_idx] != previous_frame_rgb_ints[row_idx][col_idx]);
             }
-
-            int row_idx = i / current_frame_unmodified->shape[1]; // Row index
-            int col_idx = i % current_frame_unmodified->shape[1]; // Column index
 
             if (skip_to_row_index != -1)
             {
@@ -238,8 +251,6 @@ extern "C"
                 {
                     // We have reached the row we were skipping to, so reset the skip_to_row_index
                     skip_to_row_index = -1;
-                    // std::cout << "Reset skip_to_row_index to -1 at row " << row_idx << " col_idx " << col_idx << std::endl;
-                    // std::cout << "color_ranges_map is empty: " << color_ranges_map.empty() << std::endl;
                 }
             }
 
@@ -256,11 +267,11 @@ extern "C"
                         int combined_row_number = (row_idx - 1) * 1000 + (identical_rows[row_idx - 1] + 1);
                         skip_to_row_index = row_idx + identical_rows[row_idx - 1];
                         ss << encode_utf8(combined_row_number);
-                        //std::cout << "Set skip_to_row_index to " << skip_to_row_index << " for row " << row_idx - 1 << ". start index: " << row_idx - 1 << " count: " << identical_rows[row_idx - 1] << std::endl;
+                        // std::cout << "Set skip_to_row_index to " << skip_to_row_index << " for row " << row_idx - 1 << ". start index: " << row_idx - 1 << " count: " << identical_rows[row_idx - 1] << std::endl;
                     }
                     else
                     {
-                        //ss << encode_utf8((row_idx - 1) * 1000); // Add 3 zeros if the row isn't a start of a range of identical rows
+                        // ss << encode_utf8((row_idx - 1) * 1000); // Add 3 zeros if the row isn't a start of a range of identical rows
                         ss << encode_utf8((row_idx - 1) * 1000 + 1);
                         // std::cout << "Row " << row_idx - 1 << " is not a start of a range of identical rows" << std::endl;
                     }
@@ -291,6 +302,7 @@ extern "C"
                 range_current_color = -1;
             }
 
+            int rgb_int = get_pixel_color_code(current_pixel);
             if (color_changed_at_current_pixel && rgb_int != range_current_color)
             {
                 // The color changed, and the pixel changed since the last frame, so we need to add a new range for this row starting at this column
@@ -309,34 +321,12 @@ extern "C"
             }
         }
 
-        // Handle the last row if necessary
-        if (!color_ranges_map.empty())
-        {
-            // Write the index of the final row, which is the total amount of rows - 1
-            int row_idx = current_frame_unmodified->shape[0] - 1;
-            ss << encode_utf8((row_idx - 1) * 1000 + (identical_rows[row_idx - 1] + 1));
-
-            //ss << encode_utf8(current_frame->shape[0] - 1);
-            for (auto &color_ranges : color_ranges_map)
-            {
-                // Write the color's unicode codepoint (SURROGATE_RANGE_SIZE may be added if this value is >= 0xD800)
-                ss << encode_utf8(color_ranges.first);
-                for (auto &range : color_ranges.second)
-                {
-                    int combined = range.first * 1000 + range.second; // Combine start and span into a single integer
-                    ss << encode_utf8(combined);
-                    // std::cout << range.first << " " << range.second << " " << combined << std::endl;
-                }
-                ss << '\x01'; // Delimiter A (end of color)
-            }
-            ss << '\x02'; // Delimiter B (end of row)
-        }
-
-        cached_previous_frame_modified = current_frame_modified;
         cached_previous_frame_unmodified = current_frame_unmodified;
-
         cached_output = ss.str();
         std::strncpy(output, cached_output.c_str(), cached_output.size());
         output[cached_output.size()] = '\0';
+
+        // After finishing the frame, update the previous RGBInts
+        previous_frame_rgb_ints = std::move(current_frame_rgb_ints);
     }
 }
