@@ -30,10 +30,10 @@ class NESGameServer:
     # 60.0 with 100 scale runs fine, but is delayed for the viewer when there is substantial movement.
     MAX_RENDER_FRAME_RATE: float = 60.0
     # TODO: For some reason I'm getting 20 FPS if this is 30, and 30 FPS if this is 40.
-    MAX_PUBLISH_FRAME_RATE: float = 40.0
+    MAX_PUBLISH_FRAME_RATE: float = 30.0
     #MAX_PUBLISH_FRAME_RATE: float = 120.0
-    SCALE_PERCENTAGE = 50
-
+    SEND_FULL_FRAMES_ONLY: bool = False
+    SCALE_PERCENTAGE: int = 100
     SCALE_INTERPOLATION_METHOD = cv2.INTER_LINEAR
     """
     INTER_NEAREST looks ok but flickers
@@ -110,10 +110,8 @@ class NESGameServer:
 
             # Has enough time has elapsed to publish a frame?
             if time.time() - self.last_frame_publish_time >= 1.0 / self.MAX_PUBLISH_FRAME_RATE:
-
                 state = state.astype('uint8')
-
-                if time.time() - self.last_full_frame_time >= self.full_frame_interval:
+                if self.SEND_FULL_FRAMES_ONLY or time.time() - self.last_full_frame_time >= self.full_frame_interval:
                     utf8_data = self.frame.full_frame_to_string(state)
                     self.last_full_frame_time = time.time()
                 else:
@@ -147,5 +145,7 @@ if __name__ == "__main__":
     FRAME_PORT = 9001
 
     emulator = NESEnv(r"./roms/Super Mario Bros.nes")
+    #emulator = NESEnv(r"./roms/Sky Kid (USA).nes")
+    #emulator = NESEnv(r"./roms/Rockman 2 - Dr. Wily no Nazo (Japan).nes")
     server = NESGameServer(emulator, HOST, CONTROLLER_PORT, FRAME_PORT)
     asyncio.run(server.main())

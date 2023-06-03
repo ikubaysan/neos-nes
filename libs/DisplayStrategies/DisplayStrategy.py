@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
+from ..Helpers.GeneralHelpers import *
 
-from libs.Helpers.GeneralHelpers import *
-
+## Orig
 def rgb_to_utf8(r: int, g: int, b: int, offset: int=0) -> str:
     """Takes an RGB tuple and converts it into a single UTF-8 character"""
     r >>= 2
@@ -24,28 +24,57 @@ def utf8_to_rgb(utf8_char: str, offset: int=0) -> tuple:
     b = (rgb_int & 0x3F) << 2
     return (r, g, b)
 
-def update_canvas(message: str, canvas: np.ndarray, offset: int):
+
+def update_canvas(message: str, canvas: np.ndarray, offset: int, display_canvas_every_update: bool = False):
     i = 0
+    # Iterate over the entire message
     while i < len(message):
-        row = get_row_index(char=message[i], offset=offset)  # Get the row index
+        # Each message starts with a character encoding the starting row index and the row range length
+        row_start_index, row_range_length = get_start_index_and_range_length(char=message[i], offset=offset)
         i += 1
-        color = utf8_to_rgb(utf8_char=message[i], offset=offset)  # Convert the UTF-8 character to RGB
+
+        # The next character represents a color. Convert it to RGB.
+        color = utf8_to_rgb(utf8_char=message[i], offset=offset)
         i += 1
-        while i < len(message):  # Check for delimiter A (end of color)
+
+        # Continue iterating over the message until we reach the delimiter A ('\x01'), which signifies the end of color
+        while i < len(message):
             if message[i] == '\x01':
                 i += 1
+
+                # Check for delimiter B ('\x02'), which signifies the end of a row segment
                 if message[i] == '\x02':
                     break
                 else:
-                    color = utf8_to_rgb(utf8_char=message[i], offset=offset)  # Convert the UTF-8 character to RGB
+                    # We've encountered a new color for the same row, so update the color and process the ranges for this color
+                    color = utf8_to_rgb(utf8_char=message[i], offset=offset)
                     i += 1
-            while i + 1 < len(message) and message[i] != '\x01':  # Check for delimiters A and B
-                start, range_length = get_start_index_and_range_length(char=message[i], offset=offset)  # Get the start index of the range and range length
+
+            # Iterate over the characters until we reach another color change or the end of the row segment
+            while message[i] != '\x01':
+
+                # If we've reached the end of the message, break out of the loop
+                if i + 1 >= len(message):
+                    # Or technically we could just return here
+                    break
+
+                # Each character represents a starting column index and a range length.
+                # We'll apply the current color to this range in the canvas.
+                start, range_length = get_start_index_and_range_length(char=message[i], offset=offset)
+
+                # Iterate over each column in the range and each row in the row range, setting the color in the canvas
                 for j in range(start, start + range_length):
-                    canvas[row][j] = color
+                    for r in range(row_start_index, row_start_index + row_range_length):
+                        canvas[r][j] = color
+
+                    # If requested, update the displayed canvas after each range
+                    if display_canvas_every_update:
+                        cv2.imshow('update_canvas debug', canvas)
                 i += 1
+        # After processing all colors and ranges for a row segment, move to the next segment
         i += 1
     return
+
 
 def get_start_index_and_range_length(char: str, offset: int) -> (int, int):
     combined = ord(char) - offset
@@ -54,16 +83,6 @@ def get_start_index_and_range_length(char: str, offset: int) -> (int, int):
     start = combined // 1000
     range_length = combined % 1000
     return start, range_length
-
-def get_row_index(char: str, offset: int) -> int:
-    return ord(char) - offset
-
-def get_start_index(char: str, offset: int) -> int:
-    return ord(char) - offset
-
-def get_range_length(char: str, offset: int) -> int:
-    return ord(char) - offset
-
 
 class DisplayStrategy(ABC):
     def __init__(self, host: str, port: int, scale_percentage: int):
@@ -75,7 +94,7 @@ class DisplayStrategy(ABC):
         # new_frame_height is the amount of rows to create
         # new_frame_width is the amount of columns to create
         # 3 RGB channels
-        self.canvas = np.zeros((self.new_frame_height, self.new_frame_width, 3), dtype=np.uint8)  # Initialize an empty canvas
+        self.reinitialize_canvas()
 
     @abstractmethod
     def display(self):
@@ -84,6 +103,9 @@ class DisplayStrategy(ABC):
     @abstractmethod
     def update_canvas(self, message: str, canvas=None):
         pass
+
+    def reinitialize_canvas(self):
+        self.canvas = np.zeros((self.new_frame_height, self.new_frame_width, 3), dtype=np.uint8)
 
     def show_frame(self, window_name: str):
         # Display the image represented by self.canvas in a window with the specified window_name
@@ -100,11 +122,14 @@ class DisplayStrategy(ABC):
     async def receive_frames(self):
         uri = f"ws://{self.host}:{self.port}"
         logger.info(f"Using display strategy: {self.__class__.__name__}")
+        # TODO: delete this, only here for debug! Is a memory leak!
+        messages = []
         while True:
             try:
                 async with websockets.connect(uri, max_size=1024 * 1024 * 10) as websocket:
                     while True:
                         message = await websocket.recv()
+                        messages.append(message)
                         # Encoding as UTF-8, but in Logix we will decode the RGB character as UTF-32.
                         # This still works because the unicode code points are identical for both.
                         #print(message)

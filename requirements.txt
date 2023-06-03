@@ -3,3 +3,4 @@ pyrtmp
 websockets
 imageio
 opencv-python
+pytest
