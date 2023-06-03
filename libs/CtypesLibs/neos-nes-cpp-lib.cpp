@@ -4,6 +4,7 @@
 #include <sstream>
 #include <iostream>
 #include <unordered_map>
+#include <unordered_set>
 
 extern "C"
 {
@@ -164,7 +165,7 @@ extern "C"
     }
 
     // Function to generate RGBInts for a given frame
-    void create_frame_rgb_ints(Array3D *frame, FrameRGBInts &frame_rgb_ints)
+    void create_frame_rgb_ints(Array3D *frame, FrameRGBInts &frame_rgb_ints, const FrameRGBInts *compare_frame_rgb_ints = nullptr, std::unordered_set<int> *changed_rows = nullptr)
     {
         // Iterate over each row and column of the frame
         for (int i = 0; i < frame->shape[0]; ++i)
@@ -176,17 +177,31 @@ extern "C"
 
                 // Convert the pixel data to an RGB integer value and store it in the frame_rgb_ints vector
                 frame_rgb_ints[i][j] = get_pixel_color_code(pixel_data);
+
+                // If a comparison frame_rgb_ints and a changed_rows set are provided
+                if (compare_frame_rgb_ints && changed_rows)
+                {
+                    // If the color at this pixel is different
+                    if (frame_rgb_ints[i][j] != (*compare_frame_rgb_ints)[i][j])
+                    {
+                        // Add the row index to the changed_rows set
+                        changed_rows->insert(i);
+                    }
+                }
             }
         }
     }
 
     void frame_to_string(Array3D *current_frame_unmodified, Array3D *previous_frame_unmodified, char *output)
     {
-        // Create RGBInts for the current and previous frames
+        // Create RGBInts for the current frame
         FrameRGBInts current_frame_rgb_ints(current_frame_unmodified->shape[0], std::vector<int>(current_frame_unmodified->shape[1]));
         create_frame_rgb_ints(current_frame_unmodified, current_frame_rgb_ints);
 
         FrameRGBInts previous_frame_rgb_ints;
+
+        // Define a set to store rows with at least one changed pixel
+        std::unordered_set<int> changed_rows;
 
         // Find ranges of identical rows
         std::unordered_map<int, int> identical_rows;
@@ -200,7 +215,13 @@ extern "C"
         if (previous_frame_unmodified)
         {
             previous_frame_rgb_ints.resize(previous_frame_unmodified->shape[0], std::vector<int>(previous_frame_unmodified->shape[1]));
-            create_frame_rgb_ints(previous_frame_unmodified, previous_frame_rgb_ints);
+            create_frame_rgb_ints(previous_frame_unmodified, previous_frame_rgb_ints, &current_frame_rgb_ints, &changed_rows);
+            // std::cout << "Changed Rows: ";
+            // for (const auto &row : changed_rows)
+            // {
+            //     std::cout << row << " ";
+            // }
+            // std::cout << std::endl;
         }
 
         std::ostringstream ss;
@@ -226,8 +247,18 @@ extern "C"
             bool color_changed_at_current_pixel = true;
             if (previous_frame_unmodified)
             {
-                // If you don't care about artifacting, you can just do this instead of all of the above:
-                color_changed_at_current_pixel = current_frame_rgb_ints[row_idx][col_idx] != previous_frame_rgb_ints[row_idx][col_idx];
+                // If the current row is in the changed_rows set, then we will consider all pixels in the row to have changed (to prevent artifacting)
+                if (changed_rows.find(row_idx) != changed_rows.end())
+                {
+                    color_changed_at_current_pixel = true;
+                }
+                else
+                {
+                    color_changed_at_current_pixel = false;
+                }
+
+                // If you don't care about artifacting and want more speed, you can just do this:
+                //color_changed_at_current_pixel = current_frame_rgb_ints[row_idx][col_idx] != previous_frame_rgb_ints[row_idx][col_idx];
             }
 
             if (skip_to_row_index != -1)
@@ -309,6 +340,8 @@ extern "C"
                 range_current_color = -1;
             }
         }
+
+        // TODO: handle last row
 
         cached_previous_frame_unmodified = current_frame_unmodified;
         cached_output = ss.str();
