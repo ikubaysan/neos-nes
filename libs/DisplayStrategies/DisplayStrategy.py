@@ -8,6 +8,11 @@ def rgb_to_utf8(r: int, g: int, b: int, offset: int = 0) -> str:
     rg_int = r * 1000 + g + offset
     b_int = b + offset
 
+    if rg_int > 0xD800:
+        rg_int += SURROGATE_RANGE_SIZE
+    if b_int > 0xD800:
+        b_int += SURROGATE_RANGE_SIZE
+
     # Convert these numbers into their corresponding Unicode code points
     rg_char = chr(rg_int)
     b_char = chr(b_int)
@@ -19,8 +24,16 @@ def rgb_to_utf8(r: int, g: int, b: int, offset: int = 0) -> str:
 def utf8_to_rgb(utf8_chars: str, offset: int = 0) -> tuple:
     """Converts two UTF-8 characters to an RGB tuple"""
     # Convert the UTF-8 characters back into their original numbers
-    rg_int = ord(utf8_chars[0]) - offset
-    b_int = ord(utf8_chars[1]) - offset
+    rg_int = ord(utf8_chars[0])
+
+    if rg_int >= 0xD800:
+        rg_int -= SURROGATE_RANGE_SIZE
+    rg_int -= offset
+
+    b_int = ord(utf8_chars[1])
+    if b_int >= 0xD800:
+        b_int -= SURROGATE_RANGE_SIZE
+    b_int -= offset
 
     # Extract the R, G, and B values
     r = rg_int // 1000
@@ -37,9 +50,9 @@ def update_canvas(message: str, canvas: np.ndarray, offset: int, display_canvas_
         row_start_index, row_range_length = get_start_index_and_range_length(char=message[i], offset=offset)
         i += 1
 
-        # The next character represents a color. Convert it to RGB.
-        color = utf8_to_rgb(utf8_char=message[i], offset=offset)
-        i += 1
+        # The next two characters represent a color. Convert it to RGB.
+        color = utf8_to_rgb(utf8_chars=message[i:i+2], offset=offset)
+        i += 2  # Increase by 2 as we are now reading two characters for color
 
         # Continue iterating over the message until we reach the delimiter A ('\x01'), which signifies the end of color
         while i < len(message):
@@ -51,8 +64,8 @@ def update_canvas(message: str, canvas: np.ndarray, offset: int, display_canvas_
                     break
                 else:
                     # We've encountered a new color for the same row, so update the color and process the ranges for this color
-                    color = utf8_to_rgb(utf8_char=message[i], offset=offset)
-                    i += 1
+                    color = utf8_to_rgb(utf8_chars=message[i:i+2], offset=offset)
+                    i += 2  # Increase by 2 as we are now reading two characters for color
 
             # Iterate over the characters until we reach another color change or the end of the row segment
             while message[i] != '\x01':

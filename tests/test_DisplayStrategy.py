@@ -151,6 +151,10 @@ def test_update_canvas_from_cpp(frame_to_string: FrameToString, advanced_display
 
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+
+    # Assert that every pixel in current_state is equal to current_state_constructed_by_message
+    assert np.array_equal(current_state, current_state_constructed_by_message)
+
     return
 
 
