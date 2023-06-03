@@ -238,7 +238,13 @@ extern "C"
             bool color_changed_at_current_pixel = true;
             if (previous_frame_unmodified)
             {
-                color_changed_at_current_pixel = (current_frame_rgb_ints[row_idx][col_idx] != previous_frame_rgb_ints[row_idx][col_idx]);
+                color_changed_at_current_pixel = false;
+                for (int j = 0; j < current_frame_unmodified->shape[1]; j++)
+                    if (current_frame_rgb_ints[row_idx][j] != previous_frame_rgb_ints[row_idx][j])
+                    {
+                        color_changed_at_current_pixel = true;
+                        break;
+                    }
             }
 
             if (skip_to_row_index != -1)
