@@ -144,8 +144,8 @@ if __name__ == "__main__":
     CONTROLLER_PORT = 9000
     FRAME_PORT = 9001
 
-    emulator = NESEnv(r"./roms/Super Mario Bros.nes")
-    #emulator = NESEnv(r"./roms/Sky Kid (USA).nes")
+    #emulator = NESEnv(r"./roms/Super Mario Bros.nes")
+    emulator = NESEnv(r"./roms/Sky Kid (USA).nes")
     #emulator = NESEnv(r"./roms/Rockman 2 - Dr. Wily no Nazo (Japan).nes")
     server = NESGameServer(emulator, HOST, CONTROLLER_PORT, FRAME_PORT)
     asyncio.run(server.main())

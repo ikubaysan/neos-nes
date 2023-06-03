@@ -98,9 +98,10 @@ extern "C"
 
     std::pair<int, int> get_pixel_color_codes(unsigned char *pixel_data)
     {
-        int r = pixel_data[0];
+        // Had to switch r and b so the colors appear correctly
+        int b = pixel_data[0];
         int g = pixel_data[1];
-        int b = pixel_data[2];
+        int r = pixel_data[2];
 
         // Combine R and G values into one integer and B into another
         int rg = r * 1000 + g; // Assuming r and g are each < 1000
