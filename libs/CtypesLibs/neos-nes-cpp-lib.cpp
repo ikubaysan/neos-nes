@@ -32,7 +32,7 @@ extern "C"
 
         if (unicode_codepoint == 0)
         {
-            // Be careful of this hitting when there is no offset. 
+            // Be careful of this hitting when there is no offset.
             // The codepoint would be 0, which is reserved for null and will cause problems.
             // The offset should also account for special character like delimiters.
             utf8_char.push_back(unicode_codepoint + OFFSET);
@@ -44,7 +44,7 @@ extern "C"
 
             // Handling surrogates that are not legal unicode_codepoint values.
             // If the unicode_codepoint is the lowest part of the surrogate range or higher, we add the size of the surrogate range to it.
-            // This will make it fall outside of the surrogate range. 
+            // This will make it fall outside of the surrogate range.
             // The decoding code must subtract the offset and add the surrogate range size back.
             if (unicode_codepoint >= 0xD800)
                 unicode_codepoint += SURROGATE_RANGE_SIZE;
@@ -89,17 +89,17 @@ extern "C"
     /*
         get_pixel_color_code() is used to compute a unique integer value for a pixel's color based on its RGB values.
         It takes a pointer to an array of three unsigned chars, which represent the red, green, and blue values of the pixel color.
-     
+
         It first shifts the RGB values to the right by 2 bits, effectively dividing them by 4 and thereby reducing the
         precision from 256 possible values to 64. This is done to compress the color data so it can fit into a single integer.
-     
+
         The resulting RGB values are then packed into a single integer, with blue occupying the highest order bits,
         green the next highest, and red the lowest. This is done by shifting the blue value left by 10 bits and the green value left
         by 5 bits, then bitwise OR-ing these with the red value.
-     
+
         The output is a single integer that is a unique representation of the pixel's color, taking into account the lower
         precision of the RGB values.
-     
+
         Parameters:
             pixel_data - pointer to an array of three unsigned chars, representing the RGB values of a pixel color.
         Return:
@@ -163,8 +163,6 @@ extern "C"
         }
     }
 
-    
-
     // Function to generate RGBInts for a given frame
     FrameRGBInts create_frame_rgb_ints(Array3D *frame)
     {
@@ -172,8 +170,10 @@ extern "C"
         FrameRGBInts frame_rgb_ints(frame->shape[0], std::vector<int>(frame->shape[1]));
 
         // Iterate over each row and column of the frame
+        // Iterate over each row of the frame
         for (int i = 0; i < frame->shape[0]; ++i)
         {
+            // Iterate over each column of the frame
             for (int j = 0; j < frame->shape[1]; ++j)
             {
                 // Get the pixel data (RGB values) of the current pixel
@@ -195,7 +195,6 @@ extern "C"
         FrameRGBInts current_frame_rgb_ints = create_frame_rgb_ints(current_frame_unmodified);
         FrameRGBInts previous_frame_rgb_ints;
 
-
         // Find ranges of identical rows
         std::unordered_map<int, int> identical_rows;
         find_identical_rows(current_frame_unmodified, &identical_rows);
@@ -208,22 +207,6 @@ extern "C"
         if (previous_frame_unmodified)
         {
             previous_frame_rgb_ints = create_frame_rgb_ints(previous_frame_unmodified);
-        }
-
-        std::vector<bool> rowHasChanged(current_frame_unmodified->shape[0], false);
-        if (previous_frame_unmodified)
-        {
-            for (int row = 0; row < current_frame_unmodified->shape[0]; ++row)
-            {
-                for (int col = 0; col < current_frame_unmodified->shape[1]; ++col)
-                {
-                    if (current_frame_rgb_ints[row][col] != previous_frame_rgb_ints[row][col])
-                    {
-                        rowHasChanged[row] = true;
-                        break;
-                    }
-                }
-            }
         }
 
         // if (cached_previous_frame_unmodified != nullptr && cached_previous_frame_unmodified == previous_frame_unmodified)
@@ -253,9 +236,29 @@ extern "C"
         {
             int row_idx = i / current_frame_unmodified->shape[1]; // Row index
             int col_idx = i % current_frame_unmodified->shape[1]; // Column index
-            // If the color of a pixel in the current row is different between the current and previous frames, then consider the entire row to have changed.
-            // Unfortunately this is necessary to prevent artifacting.
-            bool color_changed_at_current_pixel = rowHasChanged[row_idx];
+            bool color_changed_at_current_pixel = true;
+            if (previous_frame_unmodified)
+            {
+                color_changed_at_current_pixel = false;
+
+                // Increase to reduce artifacting
+                int look_ahead_behind = 20; // Number of pixels to look ahead/behind
+                int start = std::max(0, col_idx - look_ahead_behind);
+                int end = std::min(current_frame_unmodified->shape[1], col_idx + look_ahead_behind);
+
+                for (int j = start; j < end; ++j)
+                {
+                    if (current_frame_rgb_ints[row_idx][j] != previous_frame_rgb_ints[row_idx][j])
+                    {
+                        color_changed_at_current_pixel = true;
+                        break;
+                    }
+                }
+
+                // If you don't care about artifacting, you can just do this instead of all of the above:
+                // color_changed_at_current_pixel = current_frame_rgb_ints[row_idx][col_idx] != previous_frame_rgb_ints[row_idx][col_idx];
+            }
+
             if (skip_to_row_index != -1)
             {
                 if (row_idx < skip_to_row_index)
@@ -335,8 +338,6 @@ extern "C"
                 range_current_color = -1;
             }
         }
-
-        // TODO: handle last row.
 
         cached_previous_frame_unmodified = current_frame_unmodified;
         cached_output = ss.str();
