@@ -165,7 +165,7 @@ extern "C"
     }
 
     // Function to generate RGBInts for a given frame
-    void create_frame_rgb_ints(Array3D *frame, FrameRGBInts &frame_rgb_ints, const FrameRGBInts *compare_frame_rgb_ints = nullptr, std::unordered_set<int> *changed_rows = nullptr)
+    void create_frame_rgb_ints(Array3D *frame, FrameRGBInts *frame_rgb_ints, Array3D *compare_frame = nullptr, FrameRGBInts *compare_frame_rgb_ints = nullptr, std::unordered_set<int> *changed_rows = nullptr)
     {
         // Iterate over each row and column of the frame
         for (int i = 0; i < frame->shape[0]; ++i)
@@ -176,13 +176,22 @@ extern "C"
                 unsigned char *pixel_data = frame->data + (i * frame->shape[1] + j) * frame->shape[2];
 
                 // Convert the pixel data to an RGB integer value and store it in the frame_rgb_ints vector
-                frame_rgb_ints[i][j] = get_pixel_color_code(pixel_data);
+                (*frame_rgb_ints)[i][j] = get_pixel_color_code(pixel_data);
+
+                if (compare_frame)
+                {
+                    // Get the pixel data (RGB values) of the current pixel in the comparison frame
+                    unsigned char *compare_pixel_data = compare_frame->data + (i * compare_frame->shape[1] + j) * compare_frame->shape[2];
+
+                    // Convert the pixel data to an RGB integer value and store it in the compare_frame_rgb_ints vector
+                    (*compare_frame_rgb_ints)[i][j] = get_pixel_color_code(compare_pixel_data);
+                }
 
                 // If a comparison frame_rgb_ints and a changed_rows set are provided
                 if (compare_frame_rgb_ints && changed_rows)
                 {
                     // If the color at this pixel is different
-                    if (frame_rgb_ints[i][j] != (*compare_frame_rgb_ints)[i][j])
+                    if ((*frame_rgb_ints)[i][j] != (*compare_frame_rgb_ints)[i][j])
                     {
                         // Add the row index to the changed_rows set
                         changed_rows->insert(i);
@@ -197,6 +206,7 @@ extern "C"
         static Array3D *cached_previous_frame_unmodified = nullptr;
         static Array3D *current_frame_modified = nullptr;
         static std::string cached_output;
+        
         // If the current frame is identical to the previous frame, we can reuse the previous output
         if (cached_previous_frame_unmodified != nullptr && cached_previous_frame_unmodified == previous_frame_unmodified)
         {
@@ -206,16 +216,20 @@ extern "C"
         }
 
         // Create RGBInts for the current frame
-        FrameRGBInts current_frame_rgb_ints(current_frame_unmodified->shape[0], std::vector<int>(current_frame_unmodified->shape[1]));
-        create_frame_rgb_ints(current_frame_unmodified, current_frame_rgb_ints);
-
+        FrameRGBInts current_frame_rgb_ints;
         FrameRGBInts previous_frame_rgb_ints;
         std::unordered_set<int> changed_rows;
 
         if (previous_frame_unmodified)
         {
+            current_frame_rgb_ints.resize(current_frame_unmodified->shape[0], std::vector<int>(current_frame_unmodified->shape[1]));
             previous_frame_rgb_ints.resize(previous_frame_unmodified->shape[0], std::vector<int>(previous_frame_unmodified->shape[1]));
-            create_frame_rgb_ints(previous_frame_unmodified, previous_frame_rgb_ints, &current_frame_rgb_ints, &changed_rows);
+            create_frame_rgb_ints(previous_frame_unmodified, &previous_frame_rgb_ints, current_frame_unmodified, &current_frame_rgb_ints, &changed_rows);
+        }
+        else
+        {
+            current_frame_rgb_ints.resize(current_frame_unmodified->shape[0], std::vector<int>(current_frame_unmodified->shape[1]));
+            create_frame_rgb_ints(current_frame_unmodified, &current_frame_rgb_ints);
         }
 
         // Find ranges of identical rows
