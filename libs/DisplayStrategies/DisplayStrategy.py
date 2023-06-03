@@ -5,8 +5,13 @@ from ..Helpers.GeneralHelpers import *
 def rgb_to_utf8(r: int, g: int, b: int, offset: int = 0) -> str:
     """Takes an RGB tuple and converts it into two UTF-8 characters"""
     # Combine the R and G values into one six-digit number, and the B value into a three-digit number
-    rg_int = r * 1000 + g + offset
-    b_int = b + offset
+    # rg_int = r * 1000 + g + offset
+    # b_int = b + offset
+
+    # r and b are intentionally switched so cv displays them correctly.
+    # Above is the "proper" implementation for RGB.
+    rg_int = b * 1000 + g + offset
+    b_int = r + offset
 
     if rg_int > 0xD800:
         rg_int += SURROGATE_RANGE_SIZE
@@ -40,7 +45,9 @@ def utf8_to_rgb(utf8_chars: str, offset: int = 0) -> tuple:
     g = rg_int % 1000
     b = b_int
 
-    return (r, g, b)
+    # r and b are intentionally switched so cv displays them correctly.
+    # The "proper" RGB implementation is (r, g, b)
+    return (b, g, r)
 
 def update_canvas(message: str, canvas: np.ndarray, offset: int, display_canvas_every_update: bool = False):
     i = 0
