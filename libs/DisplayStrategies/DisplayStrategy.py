@@ -68,6 +68,7 @@ def update_canvas(message: str, canvas: np.ndarray, offset: int, display_canvas_
                     i += 2  # Increase by 2 as we are now reading two characters for color
 
             # Iterate over the characters until we reach another color change or the end of the row segment
+            # I could also write this as "while message[i] != '\x01' and i + 1 < len(message)"
             while message[i] != '\x01':
 
                 # If we've reached the end of the message, break out of the loop

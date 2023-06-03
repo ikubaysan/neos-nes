@@ -4,6 +4,7 @@
 #include <sstream>
 #include <iostream>
 #include <unordered_map>
+#include <unordered_set>
 
 struct pair_hash
 {
@@ -169,6 +170,11 @@ extern "C"
         static Array3D *cached_previous_frame = nullptr;
         static std::string cached_output;
 
+        // Keep track of the rows where color_changed_at_current_pixel was true
+        static bool use_color_changed_rows = false;
+        static std::unordered_set<int> color_changed_rows;
+        std::unordered_set<int> new_color_changed_rows;
+
         if (previous_frame != nullptr && previous_frame == cached_previous_frame)
         {
             std::strncpy(output, cached_output.c_str(), cached_output.size());
@@ -193,10 +199,9 @@ extern "C"
 
         for (int i = 0; i < total_pixels; ++i, current_pixel += current_frame->shape[2])
         {
-            bool color_changed_at_current_pixel = true;
+            bool color_changed_at_current_pixel = false;
             if (previous_frame)
             {
-                color_changed_at_current_pixel = false;
                 for (int j = 0; j < current_frame->shape[2]; j++)
                 {
                     if (current_pixel[j] != previous_pixel[j])
@@ -205,12 +210,31 @@ extern "C"
                         break;
                     }
                 }
-
                 previous_pixel += previous_frame->shape[2];
+            }
+            else
+            {
+                // previous_frame is nullptr, meaning a full frame update was sent, so we consider all pixels changed
+                color_changed_at_current_pixel = true;
             }
 
             int row_idx = i / current_frame->shape[1]; // Row index
             int col_idx = i % current_frame->shape[1]; // Column index
+
+            // If color_changed_at_current_pixel is true for this pixel, add its row to the new set
+            if (color_changed_at_current_pixel)
+            {
+                new_color_changed_rows.insert(row_idx);
+            }
+
+            // Check if color_changed_at_current_pixel was true once at this row during the previous frame
+            // If so, then we need to update the entire row. This is unfortunate and I probably don't need to send the entire row,
+            // but this was a way I could guarantee no artifacting.
+            // TODO: find a way to not send entire row. Maybe just neighboring pixels?
+            if (use_color_changed_rows && !color_changed_at_current_pixel && color_changed_rows.count(row_idx) > 0)
+            {
+                color_changed_at_current_pixel = true;
+            }
 
             if (skip_to_row_index != -1)
             {
@@ -220,55 +244,44 @@ extern "C"
                 }
                 else
                 {
-                    // We have reached the row we were skipping to, so reset the skip_to_row_index
                     skip_to_row_index = -1;
-                    // std::cout << "Reset skip_to_row_index to -1 at row " << row_idx << " col_idx " << col_idx << std::endl;
-                    // std::cout << "color_ranges_map is empty: " << color_ranges_map.empty() << std::endl;
                 }
             }
 
             if (col_idx == 0)
             {
-                // We are at the start of a new row
                 if (!color_ranges_map.empty())
                 {
-                    // Write the row index of the previous row, which we have finished evaluating.
-                    // But if the row index is the start of repeated rows, then account for that.
                     changes_made_for_previous_row = true;
                     if (identical_rows.find(row_idx - 1) != identical_rows.end())
                     {
                         int combined_row_number = (row_idx - 1) * 1000 + (identical_rows[row_idx - 1] + 1);
                         skip_to_row_index = row_idx + identical_rows[row_idx - 1];
                         ss << encode_utf8(combined_row_number);
-                        // std::cout << "Set skip_to_row_index to " << skip_to_row_index << " for row " << row_idx - 1 << ". start index: " << row_idx - 1 << " count: " << identical_rows[row_idx - 1] << std::endl;
                     }
                     else
                     {
-                        // ss << encode_utf8((row_idx - 1) * 1000); // Add 3 zeros if the row isn't a start of a range of identical rows
                         ss << encode_utf8((row_idx - 1) * 1000 + 1);
-                        // std::cout << "Row " << row_idx - 1 << " is not a start of a range of identical rows" << std::endl;
                     }
                 }
 
                 for (auto &color_ranges : color_ranges_map)
                 {
-                    // Write the color's unicode codepoint (SURROGATE_RANGE_SIZE may be added if this value is >= 0xD800)
                     ss << encode_utf8(color_ranges.first.first);
                     ss << encode_utf8(color_ranges.first.second);
                     for (auto &range : color_ranges.second)
                     {
-                        int combined = range.first * 1000 + range.second; // Combine start and span into a single integer
+                        int combined = range.first * 1000 + range.second;
                         ss << encode_utf8(combined);
-                        // std::cout << range.first << " " << range.second << " " << combined << std::endl;
                     }
-                    ss << '\x01'; // Delimiter A (end of color)
+                    ss << '\x01';
                 }
 
                 color_ranges_map.clear();
 
                 if (changes_made_for_previous_row)
                 {
-                    ss << '\x02'; // Delimiter B (end of row)
+                    ss << '\x02';
                     first_row = false;
                 }
                 changes_made_for_previous_row = false;
@@ -279,7 +292,6 @@ extern "C"
             std::pair<int, int> rgb_int = get_pixel_color_codes(current_pixel);
             if (color_changed_at_current_pixel && rgb_int != range_current_color)
             {
-                // The color changed, and the pixel changed since the last frame, so we need to add a new range
                 color_ranges_map[rgb_int].push_back({col_idx, 1});
                 range_current_color = rgb_int;
                 range_is_ongoing = true;
@@ -302,21 +314,24 @@ extern "C"
             int row_idx = current_frame->shape[0] - 1;
             ss << encode_utf8((row_idx - 1) * 1000 + (identical_rows[row_idx - 1] + 1));
 
-            // ss << encode_utf8(current_frame->shape[0] - 1);
             for (auto &color_ranges : color_ranges_map)
             {
-                // Write the color's unicode codepoint (SURROGATE_RANGE_SIZE may be added if this value is >= 0xD800)
                 ss << encode_utf8(color_ranges.first.first);
                 ss << encode_utf8(color_ranges.first.second);
                 for (auto &range : color_ranges.second)
                 {
-                    int combined = range.first * 1000 + range.second; // Combine start and span into a single integer
+                    int combined = range.first * 1000 + range.second;
                     ss << encode_utf8(combined);
                 }
-                ss << '\x01'; // Delimiter A (end of color)
+                ss << '\x01';
             }
-            ss << '\x02'; // Delimiter B (end of row)
+            ss << '\x02';
         }
+
+        // At the end of the function, assign new_color_changed_rows to color_changed_rows
+        color_changed_rows = new_color_changed_rows;
+        // We only need to update entire rows every other frame; it still looks fine.
+        use_color_changed_rows == true ? use_color_changed_rows = false : use_color_changed_rows = true;
 
         cached_previous_frame = previous_frame;
         cached_output = ss.str();
