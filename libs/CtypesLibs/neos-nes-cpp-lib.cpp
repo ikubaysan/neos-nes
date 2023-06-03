@@ -163,6 +163,8 @@ extern "C"
         }
     }
 
+    
+
     // Function to generate RGBInts for a given frame
     FrameRGBInts create_frame_rgb_ints(Array3D *frame)
     {
@@ -208,6 +210,22 @@ extern "C"
             previous_frame_rgb_ints = create_frame_rgb_ints(previous_frame_unmodified);
         }
 
+        std::vector<bool> rowHasChanged(current_frame_unmodified->shape[0], false);
+        if (previous_frame_unmodified)
+        {
+            for (int row = 0; row < current_frame_unmodified->shape[0]; ++row)
+            {
+                for (int col = 0; col < current_frame_unmodified->shape[1]; ++col)
+                {
+                    if (current_frame_rgb_ints[row][col] != previous_frame_rgb_ints[row][col])
+                    {
+                        rowHasChanged[row] = true;
+                        break;
+                    }
+                }
+            }
+        }
+
         // if (cached_previous_frame_unmodified != nullptr && cached_previous_frame_unmodified == previous_frame_unmodified)
         // {
         //     std::strncpy(output, cached_output.c_str(), cached_output.size());
@@ -235,18 +253,9 @@ extern "C"
         {
             int row_idx = i / current_frame_unmodified->shape[1]; // Row index
             int col_idx = i % current_frame_unmodified->shape[1]; // Column index
-            bool color_changed_at_current_pixel = true;
-            if (previous_frame_unmodified)
-            {
-                color_changed_at_current_pixel = false;
-                for (int j = 0; j < current_frame_unmodified->shape[1]; j++)
-                    if (current_frame_rgb_ints[row_idx][j] != previous_frame_rgb_ints[row_idx][j])
-                    {
-                        color_changed_at_current_pixel = true;
-                        break;
-                    }
-            }
-
+            // If the color of a pixel in the current row is different between the current and previous frames, then consider the entire row to have changed.
+            // Unfortunately this is necessary to prevent artifacting.
+            bool color_changed_at_current_pixel = rowHasChanged[row_idx];
             if (skip_to_row_index != -1)
             {
                 if (row_idx < skip_to_row_index)
@@ -326,6 +335,8 @@ extern "C"
                 range_current_color = -1;
             }
         }
+
+        // TODO: handle last row.
 
         cached_previous_frame_unmodified = current_frame_unmodified;
         cached_output = ss.str();
