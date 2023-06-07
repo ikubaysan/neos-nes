@@ -30,10 +30,10 @@ class NESGameServer:
     # 60.0 with 100 scale runs fine, but is delayed for the viewer when there is substantial movement.
     MAX_RENDER_FRAME_RATE: float = 60.0
     # TODO: For some reason I'm getting 20 FPS if this is 30, and 30 FPS if this is 40.
-    MAX_PUBLISH_FRAME_RATE: float = 45.0
+    MAX_PUBLISH_FRAME_RATE: float = 5.0
     #MAX_PUBLISH_FRAME_RATE: float = 120.0
     SEND_FULL_FRAMES_ONLY: bool = False
-    SCALE_PERCENTAGE: int = 100
+    SCALE_PERCENTAGE: int = 50
     SCALE_INTERPOLATION_METHOD = cv2.INTER_LINEAR
     """
     INTER_NEAREST looks ok but flickers
@@ -46,7 +46,7 @@ class NESGameServer:
     # Reduces amount of changed pixels, so this can improve FPS.
     SCANLINES_ENABLED: bool = False
 
-    def __init__(self, emulator:NESEnv, host, controller_port, frame_port):
+    def __init__(self, emulator: NESEnv, host, controller_port, frame_port):
         # WebSocket server configuration
         self.host = host
         self.controller_port = controller_port
@@ -63,7 +63,7 @@ class NESGameServer:
         self.previous_fps_check_time = time.time()
 
         self.last_full_frame_time = time.time()
-        self.full_frame_interval = 5.0  # 5 seconds
+        self.full_frame_interval = 10.0  # seconds
 
         self.last_render_time = time.time()
         self.last_frame_publish_time = time.time()
