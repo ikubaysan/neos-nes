@@ -26,9 +26,16 @@ class FrameToString:
 
         # Get the directory of the Python file
         python_file_directory = os.path.dirname(python_file_path)
+        os.chdir(python_file_directory)
 
         # Construct the shared library path
         shared_library_path = os.path.abspath(os.path.join(python_file_directory, 'neos-nes-cpp-lib.so'))
+
+        if os.path.exists(shared_library_path):
+            print(f"Found shared library at {shared_library_path}")
+        else:
+            raise Exception(f"Shared library does not exist at {shared_library_path}")
+
         print(f"Using shared_library_path {shared_library_path}")
 
         # Load the shared library

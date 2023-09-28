@@ -141,7 +141,7 @@ class NESGameServer:
             await self.frame.broadcast(utf8_data)  # Send the frame over the websocket
 
 if __name__ == "__main__":
-    HOST = '10.0.0.147'
+    HOST = 'localhost'
     CONTROLLER_PORT = 9000
     FRAME_PORT = 9001
 
