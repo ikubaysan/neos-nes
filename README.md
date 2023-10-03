@@ -9,14 +9,19 @@ Install 64-bit Python 3
 
 Install GNU C++ Compiler - MinGW-w64 
 
-Download from here, and choose 64-bit:
+Download the online installer from here:
 https://github.com/niXman/mingw-builds-binaries
+
+* Choose 64-bit architecture
+* Choose win32 thread model
 
 `pip3 install -r requirements.txt`
 
 `g++ -shared -o neos-nes-cpp-lib.so neos-nes-cpp-lib.cpp`
 
-
+If the .so file is not found, you may need to install or repair your x64 Microsoft Visual C++ Redistributable packages.
+Go here and download VS_redist.x64.exe:
+https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170
 
 # How it works
 ## Message format

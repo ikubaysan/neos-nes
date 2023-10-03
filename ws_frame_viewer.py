@@ -4,7 +4,7 @@ from libs.DisplayStrategies.AdvancedDisplayStrategy import AdvancedDisplayStrate
 # Configure logging
 logger = logging.getLogger(__name__)
 
-HOST = '10.0.0.147'
+HOST = 'localhost'
 PORT = 9001
 SCALE_PERCENTAGE = 100
 
